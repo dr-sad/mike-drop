@@ -48,7 +48,7 @@ body {
 
 #top-row {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr) 140px;
+  grid-template-columns: 160px minmax(0, 1fr) 140px;
   /* Bottom band: side panels extend here; Drop overlaps center above this band */
   grid-template-rows: minmax(0, 1fr) 32px;
   gap: 6px;
@@ -248,8 +248,9 @@ canvas#sim.dragging { cursor: grabbing; }
 }
 .air-world .name {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  text-transform: uppercase;
 }
 .air-world.active {
   border-color: rgba(126,232,168,0.95);
@@ -272,7 +273,7 @@ canvas#sim.dragging { cursor: grabbing; }
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-  width: 140px;
+  width: 160px;
   flex-shrink: 0;
 }
 #objectPanelTitle {
@@ -294,10 +295,10 @@ canvas#sim.dragging { cursor: grabbing; }
 }
 .obj-choice {
   width: 100%;
-  min-height: 38px;
+  min-height: 46px;
   border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.1);
-  padding: 5px 7px;
+  padding: 6px 8px;
   background: #2a4055;
   overflow: hidden;
   display: flex;
@@ -319,14 +320,24 @@ canvas#sim.dragging { cursor: grabbing; }
   border-radius: 8px;
 }
 .obj-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   color: rgba(232,244,255,0.92);
   text-align: left;
-  line-height: 1.15;
+  line-height: 1.2;
+  text-transform: uppercase;
+  display: block;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 .obj-choice[data-type="surprise"] {
   justify-content: center;
+  min-height: 42px;
+}
+.obj-choice[data-type="surprise"] .obj-label {
+  text-align: center;
 }
 </style>
 </head>
@@ -503,6 +514,9 @@ const BOTTLES = [
 let state = 'idle', t0 = null, elapsed = 0, raf = null, prevTs = null;
 let selectedIdx = null;
 let dragIdx = null;
+const FALL_RESET_UNLOCK_DELAY_MS = 2000;
+let fallResetUnlocked = false;
+let fallResetTimer = null;
 const dropBtn = document.getElementById('dropBtn');
 const fallResultEl = document.getElementById('fallResult');
 
@@ -513,9 +527,9 @@ function clearFallResult() {
 
 function getResultObjectLabel(b) {
   if (b.type === 'bottle') {
-    return b.water >= 50 ? 'bottle (full)' : 'bottle (empty)';
+    return (b.water >= 50 ? 'bottle (full)' : 'bottle (empty)').toLowerCase();
   }
-  return OBJECT_TYPES[b.type]?.name || b.type;
+  return String(OBJECT_TYPES[b.type]?.name || b.type).toLowerCase();
 }
 
 function getResultColorLabel(b) {
@@ -538,10 +552,32 @@ function showFirstTouchResult() {
   fallResultEl.classList.add('show');
 }
 
+function clearFallResetUnlockTimer() {
+  if (fallResetTimer !== null) {
+    clearTimeout(fallResetTimer);
+    fallResetTimer = null;
+  }
+}
+
+function resetFallResetUnlockState() {
+  fallResetUnlocked = false;
+  clearFallResetUnlockTimer();
+}
+
+function scheduleFallResetUnlock() {
+  clearFallResetUnlockTimer();
+  fallResetTimer = setTimeout(() => {
+    fallResetTimer = null;
+    if (state !== 'falling') return;
+    fallResetUnlocked = true;
+    syncActionButton();
+  }, FALL_RESET_UNLOCK_DELAY_MS);
+}
+
 function syncActionButton() {
   if (state === 'falling') {
-    dropBtn.textContent = 'Drop';
-    dropBtn.disabled = true;
+    dropBtn.textContent = fallResetUnlocked ? 'Reset' : 'Drop';
+    dropBtn.disabled = !fallResetUnlocked;
   } else if (state === 'done') {
     dropBtn.textContent = 'Reset';
     dropBtn.disabled = false;
@@ -583,6 +619,7 @@ function rr(x, y, w, h, r) {
 }
 
 function init() {
+  resetFallResetUnlockState();
   clearFallResult();
   for (const b of BOTTLES) {
     b.bottomY = GY - b.h * PPM;
@@ -1409,6 +1446,9 @@ function animate(ts) {
 
   if (allLanded && state === 'falling') {
     state = 'done';
+    selectedIdx = null;
+    resetFallResetUnlockState();
+    syncObjPanel();
     syncActionButton();
     showFirstTouchResult();
   }
@@ -1474,9 +1514,9 @@ cv.addEventListener('pointerup', (e) => { stopDragPointer(e); draw(); startAnimI
 cv.addEventListener('pointercancel', (e) => { stopDragPointer(e); draw(); startAnimIfNeeded(); });
 
 dropBtn.addEventListener('click', () => {
-  if (state === 'falling') return;
+  if (state === 'falling' && !fallResetUnlocked) return;
 
-  if (state === 'done') {
+  if (state === 'done' || state === 'falling') {
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     state = 'idle';
     syncActionButton();
@@ -1485,9 +1525,14 @@ dropBtn.addEventListener('click', () => {
   }
 
   if (raf) { cancelAnimationFrame(raf); raf = null; }
+  resetFallResetUnlockState();
+  selectedIdx = null;
+  syncObjPanel();
   state = 'falling'; t0 = null; prevTs = null;
   syncActionButton();
-  init(); raf = requestAnimationFrame(animate);
+  init();
+  scheduleFallResetUnlock();
+  raf = requestAnimationFrame(animate);
 });
 
 function getObjPanelTarget() {
