@@ -48,7 +48,7 @@ body {
 
 #top-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) 170px;
+  grid-template-columns: 140px minmax(0, 1fr) 140px;
   /* Bottom band: side panels extend here; Drop overlaps center above this band */
   grid-template-rows: minmax(0, 1fr) 32px;
   gap: 6px;
@@ -144,25 +144,93 @@ canvas#sim.dragging { cursor: grabbing; }
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  width: 170px;
+  width: 140px;
   flex-shrink: 0;
 }
 #airPanelHeader {
-  display: flex; align-items: center; gap: 8px;
-  justify-content: space-between; flex-wrap: wrap;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 #airPanelTitle { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); }
 #rhoVal { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; color: #e8f4ff; }
-#airEarthBtn {
-  padding: 8px 14px; min-height: 40px; border-radius: 8px;
-  border: 2px solid rgba(255,255,255,0.15);
-  background: #2a4550; color: #9af0c8; font-size: 12px; font-weight: 700;
-  cursor: pointer; letter-spacing: 0;
+#airControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
 }
-#airEarthBtn:hover { background: #355a60; }
-#airSliderRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-#rhoSlider { flex: 1; min-width: 120px; accent-color: #7ee8a8; cursor: pointer; height: 8px; }
-.air-lbl { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); white-space: nowrap; }
+#airScale {
+  position: relative;
+  flex: 0 0 42px;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#rhoSlider {
+  cursor: pointer;
+  accent-color: #7ee8a8;
+  width: 26px;
+  min-width: 26px;
+  height: 220px;
+  max-height: 100%;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  margin: 0;
+}
+#airWorlds {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+.air-world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 70px;
+  min-height: 70px;
+  aspect-ratio: 1 / 1;
+  padding: 5px;
+  align-self: center;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 9px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(226,236,255,0.55);
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s, opacity 0.15s;
+}
+.air-world svg {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+.air-world .meta {
+  display: block;
+  text-align: center;
+  line-height: 1;
+}
+.air-world .name {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+}
+.air-world.active {
+  border-color: rgba(126,232,168,0.95);
+  box-shadow: 0 0 0 1px rgba(126,232,168,0.2), 0 0 9px rgba(126,232,168,0.25);
+  background: rgba(126,232,168,0.1);
+  color: #e9fff3;
+}
+.air-world:not(.active) { opacity: 0.45; }
 
 /* ── object panel ── */
 #objectPanel {
@@ -177,7 +245,7 @@ canvas#sim.dragging { cursor: grabbing; }
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-  width: 120px;
+  width: 140px;
   flex-shrink: 0;
 }
 #objectPanelTitle {
@@ -187,22 +255,24 @@ canvas#sim.dragging { cursor: grabbing; }
   text-align: center;
 }
 #objGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
 }
 .obj-choice {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  min-height: 44px;
+  min-height: 38px;
   border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.1);
-  padding: 2px;
+  padding: 5px 7px;
   background: #2a4055;
   overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8px;
   cursor: pointer;
   letter-spacing: 0;
   transition: background 0.15s;
@@ -211,10 +281,21 @@ canvas#sim.dragging { cursor: grabbing; }
 .obj-choice.selected { background: #3a6a9a; border-color: #6ab0ff; color: #fff; }
 .obj-thumb {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
   pointer-events: none;
   border-radius: 8px;
+}
+.obj-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(232,244,255,0.92);
+  text-align: left;
+  line-height: 1.15;
+}
+.obj-choice[data-type="surprise"] {
+  justify-content: center;
 }
 </style>
 </head>
@@ -226,12 +307,27 @@ canvas#sim.dragging { cursor: grabbing; }
   <div id="objectPanel">
     <div id="objectPanelTitle">Objects</div>
     <div id="objGrid">
-      <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="Bottle (full)" aria-label="Bottle full"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
-      <button type="button" class="obj-choice" data-type="bottle" data-water="25" title="Bottle (25%)" aria-label="Bottle twenty five percent"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
-      <button type="button" class="obj-choice" data-type="bowling" title="Bowling ball" aria-label="Bowling ball"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
-      <button type="button" class="obj-choice" data-type="chute_closed" title="Parachute closed" aria-label="Parachute closed"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
-      <button type="button" class="obj-choice" data-type="chute_open" title="Parachute open" aria-label="Parachute open"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
-      <button type="button" class="obj-choice" data-type="balloon" title="Balloon" aria-label="Balloon"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="Bottle (full)" aria-label="Bottle full">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bottle (full)</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="bottle" data-water="25" title="Bottle (25%)" aria-label="Bottle twenty five percent">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bottle (25%)</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="bowling" title="Bowling ball" aria-label="Bowling ball">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bowling ball</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="chute_closed" title="Parachute closed" aria-label="Parachute closed">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Parachute (closed)</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="chute_open" title="Parachute open" aria-label="Parachute open">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Parachute (open)</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="balloon" title="Balloon" aria-label="Balloon">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Balloon</span>
+      </button>
+      <button type="button" class="obj-choice" data-type="surprise" title="Surprise me" aria-label="Surprise me">
+        <span class="obj-label">Surprise me</span>
+      </button>
     </div>
   </div>
 
@@ -246,12 +342,39 @@ canvas#sim.dragging { cursor: grabbing; }
     <div id="airPanelHeader">
       <span id="airPanelTitle">Air density</span>
       <span id="rhoVal">1.225 kg/m³</span>
-      <button type="button" id="airEarthBtn">Earth</button>
     </div>
-    <div id="airSliderRow">
-      <span class="air-lbl">Vacuum (0)</span>
-      <input type="range" id="rhoSlider" min="0" max="4" step="0.025" value="1.225">
-      <span class="air-lbl">Dense (4.0)</span>
+    <div id="airControl">
+      <div id="airScale">
+        <input type="range" id="rhoSlider" min="0" max="4" step="0.025" value="1.225" orient="vertical">
+      </div>
+      <div id="airWorlds">
+        <div class="air-world" data-world="titan">
+          <svg viewBox="0 0 24 24" role="img" aria-label="Titan icon">
+            <circle cx="10.5" cy="13" r="5.2" fill="#d49b62"/>
+            <ellipse cx="10.5" cy="13" rx="8.5" ry="2.1" fill="none" stroke="#b8793a" stroke-width="1.4"/>
+            <circle cx="18.2" cy="6.8" r="3.4" fill="#f2d188"/>
+            <path d="M14.5 6.8c1.4-1.3 2.8-1.9 4.4-1.9" stroke="#f7e0a6" stroke-width="1" fill="none" opacity="0.85"/>
+          </svg>
+          <span class="meta"><span class="name">Titan</span></span>
+        </div>
+        <div class="air-world active" data-world="earth">
+          <svg viewBox="0 0 24 24" role="img" aria-label="Earth icon">
+            <circle cx="12" cy="12" r="9" fill="#3c9cff"/>
+            <path d="M7.8 8.4c1.3-.7 2.6-.8 3.8.2 1.1.9 1.5 2.1 2.8 2.3 1.6.2 2.8-.6 3.3-1.8.4 1.8-.2 3.5-1.4 4.6-1 .9-2.2 1.3-3.4 1-.8-.2-1.5-.8-2.2-1.1-1.1-.5-2.4-.4-3.2.2-.9-1.4-.8-3.3.3-5.4z" fill="#6ce08f"/>
+            <path d="M8.1 15.2c1-.4 2.1-.2 3 .3.8.5 1.8.7 2.6.4-.7 1.3-2.1 2.2-3.8 2.2-1 0-1.9-.3-2.7-.8.2-.8.5-1.5.9-2.1z" fill="#6ce08f"/>
+          </svg>
+          <span class="meta"><span class="name">Earth</span></span>
+        </div>
+        <div class="air-world" data-world="moon">
+          <svg viewBox="0 0 24 24" role="img" aria-label="Moon icon">
+            <circle cx="12" cy="12" r="9" fill="#e9eef9"/>
+            <circle cx="15.7" cy="9.4" r="1.3" fill="#c7cedf"/>
+            <circle cx="9.2" cy="13.8" r="1.6" fill="#c7cedf"/>
+            <circle cx="14.1" cy="16.5" r="1.1" fill="#c7cedf"/>
+          </svg>
+          <span class="meta"><span class="name">Moon</span></span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -307,7 +430,26 @@ const OBJECT_TYPES = {
   chute_closed: { name: 'Chute (Closed)',fixedMass: 0.020, cdA: 1.0  * 0.003 },
   chute_open:   { name: 'Chute (Open)',  fixedMass: 0.020, cdA: 1.5  * 0.10  },
   balloon:      { name: 'Balloon',       fixedMass: 0.012, cdA: 0.47 * Math.PI * 0.15 ** 2 },
+  pumpkin:      { name: 'Pumpkin',       fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermelon:   { name: 'Watermelon',    fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermellon:  { name: 'Watermellon',   fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  chicken:      { name: 'Rubber Chicken',fixedMass: 0.35,  cdA: 1.1  * 0.025 },
+  mug:          { name: 'Coffee Mug',    fixedMass: 0.42,  cdA: 1.05 * 0.019 },
+  gift:         { name: 'Gift',          fixedMass: 0.80,  cdA: 1.00 * 0.028 },
+  pinata:       { name: 'Pinata',        fixedMass: 0.50,  cdA: 1.35 * 0.040 },
+  anvil:        { name: 'Anvil',         fixedMass: 8.00,  cdA: 0.70 * 0.030 },
 };
+const SURPRISE_TYPES = ['watermellon', 'pumpkin', 'mug', 'gift', 'pinata', 'anvil'];
+let surpriseCycleIndex = null;
+
+function nextSurpriseType() {
+  if (surpriseCycleIndex === null) {
+    surpriseCycleIndex = Math.floor(Math.random() * SURPRISE_TYPES.length);
+    return SURPRISE_TYPES[surpriseCycleIndex];
+  }
+  surpriseCycleIndex = (surpriseCycleIndex + 1) % SURPRISE_TYPES.length;
+  return SURPRISE_TYPES[surpriseCycleIndex];
+}
 
 const BOTTLES = [
   {cx: 220, h: 3, water: 100, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
@@ -396,6 +538,14 @@ function hitHalfWidth(b) {
     case 'chute_open': return Math.max(42, BW * 1.05);
     case 'chute_closed': return Math.max(18, BW * 0.5);
     case 'balloon': return Math.max(26, BW * 0.78);
+    case 'pumpkin': return Math.max(28, BW * 0.96);
+    case 'watermelon': return Math.max(48, BW * 1.72);
+    case 'watermellon': return Math.max(48, BW * 1.72);
+    case 'chicken': return Math.max(40, BW * 1.45);
+    case 'mug': return Math.max(42, BW * 1.45);
+    case 'gift': return Math.max(22, BW * 0.82);
+    case 'pinata': return Math.max(32, BW * 1.10);
+    case 'anvil': return Math.max(36, BW * 1.20);
     default: return Math.max(26, BW * 0.52);
   }
 }
@@ -678,6 +828,215 @@ function drawBowlingShape(b) {
   ctx.restore();
 }
 
+function drawWatermelonShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const rx = Math.max(16, Math.round(43 * s));
+  const ry = Math.max(14, Math.round(36 * s));
+  const cy = by - ry;
+  ctx.save();
+  ctx.fillStyle = '#1f6c35';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#174f27';
+  ctx.lineWidth = Math.max(1, 1.8 * s);
+  ctx.stroke();
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx * 0.98, ry * 0.98, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = '#9ddf8f';
+  ctx.lineWidth = Math.max(0.8, 1.2 * s);
+  for (let i = -4; i <= 4; i++) {
+    const y = cy + i * (ry * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(cx - rx * 0.95, y);
+    ctx.lineTo(cx + rx * 0.95, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#cfecc6';
+  ctx.lineWidth = Math.max(0.7, 1.0 * s);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx * 0.92, ry * 0.92, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPumpkinShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const rx = Math.max(9, Math.round(24 * s));
+  const ry = Math.max(8, Math.round(20 * s));
+  const cy = by - ry;
+  ctx.save();
+  ctx.fillStyle = '#e58a2f';
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#bb6620'; ctx.lineWidth = Math.max(1, 2.2 * s);
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.ellipse(cx + i * rx * 0.18, cy, rx * (0.18 + Math.abs(i) * 0.03), ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#4d7b2f';
+  rr(cx - rx * 0.12, cy - ry - 9 * s, rx * 0.24, 9 * s, 2 * s);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawChickenShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const bodyW = Math.max(20, Math.round(43 * s));
+  const bodyH = Math.max(12, Math.round(20 * s));
+  const bodyY = by - bodyH - 2 * s;
+  ctx.save();
+  ctx.fillStyle = '#f0d8a0';
+  rr(cx - bodyW / 2, bodyY, bodyW, bodyH, bodyH / 2);
+  ctx.fill();
+  ctx.strokeStyle = '#b78d55'; ctx.lineWidth = Math.max(0.8, 1.5 * s);
+  rr(cx - bodyW / 2, bodyY, bodyW, bodyH, bodyH / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + bodyW * 0.5, bodyY + bodyH * 0.45);
+  ctx.lineTo(cx + bodyW * 0.9, bodyY + bodyH * 0.2);
+  ctx.lineTo(cx + bodyW * 0.9, bodyY + bodyH * 0.7);
+  ctx.closePath();
+  ctx.fillStyle = '#d3a15e';
+  ctx.fill();
+  ctx.fillStyle = '#bf7a2f';
+  ctx.beginPath();
+  ctx.arc(cx - bodyW * 0.35, bodyY + bodyH * 0.22, Math.max(2, 3 * s), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawMugShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(21, Math.round(39 * s));
+  const h = Math.max(26, Math.round(43 * s));
+  const y = by - h;
+  ctx.save();
+  ctx.fillStyle = '#f2f5fa';
+  ctx.strokeStyle = '#bdc7d5';
+  ctx.lineWidth = Math.max(1, 2.0 * s);
+  rr(cx - w / 2, y, w, h, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.35, y + h * 0.22);
+  ctx.lineTo(cx + w * 0.35, y + h * 0.22);
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = Math.max(1, 1.7 * s);
+  ctx.stroke();
+  const hx = cx + w * 0.58, hy = y + h * 0.55;
+  ctx.beginPath();
+  ctx.ellipse(hx, hy, w * 0.32, h * 0.28, 0, -Math.PI * 0.9, Math.PI * 0.9);
+  ctx.strokeStyle = '#f7fbff';
+  ctx.lineWidth = Math.max(1.5, 3.2 * s);
+  ctx.stroke();
+  ctx.fillStyle = '#6f4930';
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.18, w * 0.28, h * 0.10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGiftShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(22, Math.round(40 * s));
+  const h = Math.max(22, Math.round(32 * s));
+  const y = by - h;
+  ctx.save();
+  ctx.fillStyle = '#e04c73';
+  rr(cx - w / 2, y, w, h, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#b63357';
+  ctx.lineWidth = Math.max(1, 1.4 * s);
+  rr(cx - w / 2, y, w, h, Math.max(2, 3 * s));
+  ctx.stroke();
+  ctx.fillStyle = '#ffd96a';
+  ctx.fillRect(cx - Math.max(1, 2 * s), y, Math.max(2, 4 * s), h);
+  ctx.fillRect(cx - w / 2, y + h * 0.45, w, Math.max(2, 4 * s));
+  ctx.beginPath();
+  ctx.ellipse(cx - w * 0.16, y, w * 0.16, h * 0.14, -0.35, 0, Math.PI * 2);
+  ctx.ellipse(cx + w * 0.16, y, w * 0.16, h * 0.14, 0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPinataShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(29, Math.round(58 * s));
+  const h = Math.max(25, Math.round(43 * s));
+  const y = by - h;
+  ctx.save();
+  ctx.strokeStyle = '#d8d8d8';
+  ctx.lineWidth = Math.max(1, 1.4 * s);
+  ctx.beginPath(); ctx.moveTo(cx, y - 10 * s); ctx.lineTo(cx, y - 1 * s); ctx.stroke();
+  const grd = ctx.createLinearGradient(cx - w / 2, y, cx + w / 2, y + h);
+  grd.addColorStop(0, '#ff6a74');
+  grd.addColorStop(0.35, '#ffd65a');
+  grd.addColorStop(0.7, '#58d6ff');
+  grd.addColorStop(1, '#9c7cff');
+  ctx.fillStyle = grd;
+  rr(cx - w / 2, y, w, h, Math.max(2, 4 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#9156a8';
+  ctx.lineWidth = Math.max(1, 1.5 * s);
+  rr(cx - w / 2, y, w, h, Math.max(2, 4 * s));
+  ctx.stroke();
+  ctx.fillStyle = '#ffe36d';
+  const fringeY = y + h;
+  for (let i = -3; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx + i * (w / 8), fringeY - 1);
+    ctx.lineTo(cx + i * (w / 8) + (i % 2 ? 2 : -2) * s, fringeY + 6 * s);
+    ctx.lineTo(cx + i * (w / 8) + (i % 2 ? 4 : -4) * s, fringeY - 1);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawAnvilShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(33, Math.round(65 * s));
+  const h = Math.max(22, Math.round(32 * s));
+  const y = by - h;
+  ctx.save();
+  const grd = ctx.createLinearGradient(cx - w / 2, y, cx + w / 2, y + h);
+  grd.addColorStop(0, '#8a939f');
+  grd.addColorStop(1, '#5f6773');
+  ctx.fillStyle = grd;
+  rr(cx - w / 2, y + h * 0.32, w, h * 0.68, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#434b57';
+  ctx.lineWidth = Math.max(1, 1.4 * s);
+  rr(cx - w / 2, y + h * 0.32, w, h * 0.68, Math.max(2, 3 * s));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.62, y + h * 0.42);
+  ctx.lineTo(cx + w * 0.58, y + h * 0.42);
+  ctx.lineTo(cx + w * 0.75, y + h * 0.08);
+  ctx.lineTo(cx - w * 0.42, y + h * 0.08);
+  ctx.closePath();
+  ctx.fillStyle = '#717b88';
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#9aa3af';
+  rr(cx - w * 0.12, y - h * 0.16, w * 0.24, h * 0.5, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#434b57';
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawFeatherShape(b) {
   const cx = b.cx, by = b.bottomY;
   const fw = Math.max(3, BW * 0.32);
@@ -724,15 +1083,9 @@ function drawAirDensity() {
     ctx.beginPath(); ctx.arc(x, y, d.r, 0, Math.PI * 2); ctx.fill();
   }
 
-  ctx.font = 'bold 12px ui-monospace, monospace';
-  ctx.textAlign = 'right';
-  const label = `\u03c1 = ${RHO.toFixed(3)} kg/m\u00b3`;
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillText(label, W - 9, 19);
-  ctx.fillStyle = RHO < 0.01 ? '#f08060' : '#d0eeff';
-  ctx.fillText(label, W - 10, 18);
   if (RHO < 0.01) {
     ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'right';
     ctx.fillStyle = '#f08060';
     ctx.fillText('VACUUM', W - 10, 33);
   }
@@ -746,6 +1099,9 @@ function drawObject(b) {
   const shadowR = b.type === 'bowling'    ? Math.max(5, BW * 0.7)
                 : b.type === 'chute_open' ? Math.max(8, BW * 0.95)
                 : b.type === 'balloon'   ? Math.max(6, BW * 0.65)
+                : b.type === 'watermelon' || b.type === 'watermellon' ? Math.max(8, BW * 0.95)
+                : b.type === 'mug'       ? Math.max(7, BW * 0.82)
+                : b.type === 'chicken'   ? Math.max(6, BW * 0.72)
                 : BW * 0.5;
   drawShadow(b, shadowR);
 
@@ -754,6 +1110,14 @@ function drawObject(b) {
     case 'chute_open':   drawChuteOpenShape(b);   break;
     case 'balloon':      drawBalloonShape(b);     break;
     case 'bowling':      drawBowlingShape(b);     break;
+    case 'pumpkin':      drawPumpkinShape(b);     break;
+    case 'watermelon':   drawWatermelonShape(b);  break;
+    case 'watermellon':  drawWatermelonShape(b);  break;
+    case 'chicken':      drawChickenShape(b);     break;
+    case 'mug':          drawMugShape(b);         break;
+    case 'gift':         drawGiftShape(b);        break;
+    case 'pinata':       drawPinataShape(b);      break;
+    case 'anvil':        drawAnvilShape(b);       break;
     default:             drawBottleShape(b);      break;
   }
 
@@ -767,6 +1131,15 @@ function objectThumbLayoutScale(type) {
     case 'chute_closed': return 0.38;
     case 'balloon': return 0.42;
     case 'bowling': return 0.52;
+    case 'pumpkin': return 0.58;
+    case 'watermelon': return 0.58;
+    case 'watermellon': return 0.58;
+    case 'chicken': return 0.74;
+    case 'mug': return 0.78;
+    case 'gift': return 0.62;
+    case 'pinata': return 0.66;
+    case 'anvil': return 0.70;
+    case 'surprise': return 1.12;
     default: return 0.55;
   }
 }
@@ -777,6 +1150,15 @@ function drawObjectThumbShape(b) {
     case 'chute_open':   drawChuteOpenShape(b);   break;
     case 'balloon':      drawBalloonShape(b);     break;
     case 'bowling':      drawBowlingShape(b);     break;
+    case 'pumpkin':      drawPumpkinShape(b);     break;
+    case 'watermelon':   drawWatermelonShape(b);  break;
+    case 'watermellon':  drawWatermelonShape(b);  break;
+    case 'chicken':      drawChickenShape(b);     break;
+    case 'mug':          drawMugShape(b);         break;
+    case 'gift':         drawGiftShape(b);        break;
+    case 'pinata':       drawPinataShape(b);      break;
+    case 'anvil':        drawAnvilShape(b);       break;
+    case 'surprise':     drawGiftShape(b);        break;
     default:             drawBottleShape(b);      break;
   }
 }
@@ -785,7 +1167,8 @@ function refreshObjectChoiceThumbs() {
   document.querySelectorAll('.obj-choice canvas.obj-thumb').forEach((canvas) => {
     const btn = canvas.closest('button');
     if (!btn) return;
-    const type = btn.dataset.type;
+    const btnType = btn.dataset.type;
+    const type = btnType === 'surprise' ? 'surprise' : btnType;
     const preset = parseFloat(btn.dataset.water);
     const water = type === 'bottle' && Number.isFinite(preset) ? preset : BOTTLES[0].water;
     const pseudo = {
@@ -1048,6 +1431,11 @@ function syncObjPanel() {
       btn.classList.toggle('selected', Math.abs(targetObj.water - presetWater) < 0.1);
       return;
     }
+    const isSurpriseBtn = btn.dataset.type === 'surprise';
+    if (isSurpriseBtn) {
+      btn.classList.toggle('selected', SURPRISE_TYPES.includes(targetObj.type));
+      return;
+    }
     btn.classList.toggle('selected', !isBottleBtn && btn.dataset.type === targetObj.type);
   });
 }
@@ -1055,8 +1443,11 @@ function syncObjPanel() {
 document.querySelectorAll('.obj-choice').forEach(btn => {
   btn.addEventListener('click', () => {
     const objPanelTarget = getObjPanelTarget();
-    const type = btn.dataset.type;
+    let type = btn.dataset.type;
     const bottleWaterPreset = parseFloat(btn.dataset.water);
+    if (type === 'surprise') {
+      type = nextSurpriseType();
+    }
     BOTTLES[objPanelTarget].type = type;
     if (type === 'bottle' && Number.isFinite(bottleWaterPreset)) {
       BOTTLES[objPanelTarget].water = bottleWaterPreset;
@@ -1071,21 +1462,29 @@ document.querySelectorAll('.obj-choice').forEach(btn => {
 });
 
 function setRho(val) {
+  const EPS = 1e-9;
   RHO = val;
   document.getElementById('rhoSlider').value = val;
   document.getElementById('rhoVal').textContent = val.toFixed(3) + ' kg/m³';
+  const moonActive = Math.abs(val - 0) <= EPS;
+  const earthActive = val >= 1.16 && val <= 1.35;
+  const titanActive = Math.abs(val - 4) <= EPS;
+  document.querySelectorAll('.air-world').forEach(el => {
+    const world = el.dataset.world;
+    const active = (world === 'moon' && moonActive) ||
+      (world === 'earth' && earthActive) ||
+      (world === 'titan' && titanActive);
+    el.classList.toggle('active', active);
+  });
 }
 
 document.getElementById('rhoSlider').addEventListener('input', function () {
   setRho(parseFloat(this.value));
 });
 
-document.getElementById('airEarthBtn').addEventListener('click', () => {
-  setRho(RHO_EARTH);
-});
-
 syncObjPanel();
 syncActionButton();
+setRho(RHO);
 updateBottleScale(); init(); draw();
 requestAnimationFrame(() => refreshObjectChoiceThumbs());
 window.addEventListener('resize', () => {
