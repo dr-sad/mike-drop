@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bottle Drop Sim</title>
+<title>Free Fall Lab</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -147,8 +147,6 @@ canvas#sim.dragging { cursor: grabbing; }
   box-shadow: 0 3px 0 #1a4a9e;
 }
 #btns #dropBtn:hover:not(:disabled) { background: linear-gradient(180deg, #5aa0ff 0%, #3478e8 100%); }
-#btns #dropBtn.reset-mode { background: linear-gradient(180deg, #ffcf8a 0%, #e89a40 100%); color: #5a2e00; box-shadow: 0 3px 0 #b86820; }
-#btns #dropBtn.reset-mode:hover:not(:disabled) { background: linear-gradient(180deg, #ffd9a0 0%, #f0aa55 100%); }
 #btns #dropBtn:disabled {
   background: #3a4d63;
   color: rgba(255,255,255,0.35);
@@ -341,17 +339,6 @@ canvas#sim.dragging { cursor: grabbing; }
 .obj-choice[data-type="surprise"] .obj-label {
   text-align: center;
 }
-#surpriseLabel {
-  text-align: center;
-  font-size: 10px;
-  color: #aaa;
-  height: 13px;
-  line-height: 13px;
-  margin-top: 2px;
-  font-style: italic;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-}
 </style>
 </head>
 <body>
@@ -365,8 +352,8 @@ canvas#sim.dragging { cursor: grabbing; }
       <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="bottle (full)" aria-label="bottle full">
         <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bottle (full)</span>
       </button>
-      <button type="button" class="obj-choice" data-type="bottle" data-water="10" title="bottle (partial)" aria-label="bottle partial">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bottle (partial)</span>
+      <button type="button" class="obj-choice" data-type="bottle" data-water="10" title="bottle (empty)" aria-label="bottle empty">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bottle (empty)</span>
       </button>
       <button type="button" class="obj-choice" data-type="bowling" title="bowling ball" aria-label="bowling ball">
         <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bowling ball</span>
@@ -383,7 +370,6 @@ canvas#sim.dragging { cursor: grabbing; }
       <button type="button" class="obj-choice" data-type="surprise" title="surprise me" aria-label="surprise me">
         <span class="obj-label">surprise me</span>
       </button>
-      <div id="surpriseLabel"></div>
     </div>
   </div>
 
@@ -438,7 +424,44 @@ canvas#sim.dragging { cursor: grabbing; }
 </div>
 </div>
 
+<!-- 1. Rotation hint element (initially hidden) -->
+<div id="rotate-hint" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  z-index:9999;
+  font-family:sans-serif;
+  text-align:center;
+  padding:2rem;
+">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+    For the best experience, please rotate your phone to landscape mode.
+  </div>
+</div>
+
 <script>
+  const rotateHint = document.getElementById('rotate-hint');
+
+  function isMobileLike() {
+    // You can tune this - this is a simple heuristic
+    return window.innerWidth <= 900 || 'ontouchstart' in window;
+  }
+
+  function updateOrientationHint() {
+    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+    const shouldShow = isMobileLike() && isPortrait;
+    rotateHint.style.display = shouldShow ? 'block' : 'none';
+  }
+
+  // Initial check
+  updateOrientationHint();
+
+  // Update on orientation/resize changes
+  window.addEventListener('resize', updateOrientationHint);
+  window.addEventListener('orientationchange', updateOrientationHint);
+
 const cv = document.getElementById('sim');
 let ctx = cv.getContext('2d');
 
@@ -484,17 +507,20 @@ const SIM_DT = 1 / 480;
 const OBJECT_TYPES = {
   bottle:       { name: 'bottle',         fixedMass: null,  cdA: C_D * A },
   bowling:      { name: 'bowling ball',   fixedMass: 6.35,  cdA: 0.47 * Math.PI * 0.108 ** 2 },
-  chute_closed: { name: 'parachute (closed)', fixedMass: 0.040, cdA: 0.8  * 0.0025 },
-  chute_open:   { name: 'parachute (open)',   fixedMass: 0.040, cdA: 1.5  * 0.10  },
+  chute_closed: { name: 'parachute (closed)', fixedMass: 0.020, cdA: 1.0  * 0.003 },
+  chute_open:   { name: 'parachute (open)',   fixedMass: 0.020, cdA: 1.5  * 0.10  },
   balloon:      { name: 'balloon',        fixedMass: 0.012, cdA: 0.47 * Math.PI * 0.15 ** 2 },
   pumpkin:      { name: 'pumpkin',        fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermelon:   { name: 'watermelon',     fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermellon:  { name: 'watermellon',    fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  chicken:      { name: 'rubber chicken', fixedMass: 0.35,  cdA: 1.1  * 0.025 },
   mug:          { name: 'coffee mug',     fixedMass: 0.42,  cdA: 1.05 * 0.019 },
   gift:         { name: 'gift',           fixedMass: 0.80,  cdA: 1.00 * 0.028 },
   pinata:       { name: 'pinata',         fixedMass: 0.50,  cdA: 1.35 * 0.040 },
   anvil:        { name: 'anvil',          fixedMass: 8.00,  cdA: 0.70 * 0.030 },
   microphone:   { name: 'microphone',     fixedMass: 0.30,  cdA: 1.00 * 0.018 },
 };
-const SURPRISE_TYPES = ['pumpkin', 'mug', 'gift', 'pinata', 'anvil', 'microphone'];
+const SURPRISE_TYPES = ['watermellon', 'pumpkin', 'mug', 'gift', 'pinata', 'anvil', 'microphone'];
 let surpriseCycleIndex = null;
 
 function nextSurpriseType() {
@@ -515,16 +541,15 @@ function withAlpha(hex, alphaHex) {
 }
 
 const BOTTLES = [
-  {cx: 220, h: 5.0, water: 100, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
+  {cx: 220, h: 3, water: 100, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
    bottomY: 0, vy: 0, fallen: 0,
-   landed: false, landTime: null, sparks: [], shattered: false, stain: null},
-  {cx: 460, h: 5.0, water: 10, color: '#e07030', cap: '#b04010', type: 'bottle',
+   landed: false, landTime: null, sparks: [], shattered: false},
+  {cx: 460, h: 3, water: 25, color: '#e07030', cap: '#b04010', type: 'bottle',
    bottomY: 0, vy: 0, fallen: 0,
-   landed: false, landTime: null, sparks: [], shattered: false, stain: null}
+   landed: false, landTime: null, sparks: [], shattered: false}
 ];
 
 let state = 'idle', t0 = null, elapsed = 0, raf = null, prevTs = null;
-let shakeIntensity = 0, shakeDecay = 6;
 let selectedIdx = null;
 let dragIdx = null;
 const FALL_RESET_UNLOCK_DELAY_MS = 2000;
@@ -540,7 +565,7 @@ function clearFallResult() {
 
 function getResultObjectLabel(b) {
   if (b.type === 'bottle') {
-    return (b.water >= 50 ? 'bottle (full)' : 'bottle (partial)').toLowerCase();
+    return (b.water >= 50 ? 'bottle (full)' : 'bottle (empty)').toLowerCase();
   }
   return String(OBJECT_TYPES[b.type]?.name || b.type).toLowerCase();
 }
@@ -552,18 +577,14 @@ function getResultColorLabel(b) {
   return b.cx <= (W / 2) ? 'blue' : 'orange';
 }
 
-function roundToTenth(t) {
-  return Math.round(t * 10) / 10;
-}
-
 function showFirstTouchResult() {
   const landed = BOTTLES.filter(b => b.landTime !== null);
   if (landed.length === 0) return;
+  const EPS = 1e-4;
   const ranked = landed.slice().sort((a, b) => a.landTime - b.landTime);
-  const side = ranked[0].cx <= W / 2 ? 'left' : 'right';
-  let message = `The ${side} object landed first.`;
-  if (ranked.length >= 2 && roundToTenth(ranked[0].landTime) === roundToTenth(ranked[1].landTime)) {
-    message = 'Both objects landed at the same time.';
+  let message = `The ${getResultColorLabel(ranked[0])} ${getResultObjectLabel(ranked[0])} landed first.`;
+  if (ranked.length >= 2 && Math.abs(ranked[0].landTime - ranked[1].landTime) <= EPS) {
+    message = 'Both objects landed at the exact same time.';
   }
   fallResultEl.textContent = message;
   fallResultEl.classList.add('show');
@@ -595,15 +616,12 @@ function syncActionButton() {
   if (state === 'falling') {
     dropBtn.textContent = fallResetUnlocked ? 'Reset' : 'Drop';
     dropBtn.disabled = !fallResetUnlocked;
-    dropBtn.classList.toggle('reset-mode', fallResetUnlocked);
   } else if (state === 'done') {
     dropBtn.textContent = 'Reset';
     dropBtn.disabled = false;
-    dropBtn.classList.add('reset-mode');
   } else {
     dropBtn.textContent = 'Drop';
     dropBtn.disabled = false;
-    dropBtn.classList.remove('reset-mode');
   }
 }
 
@@ -649,10 +667,8 @@ function init() {
     b.landTime = null;
     b.sparks  = [];
     b.shattered = false;
-    b.stain   = null;
   }
   elapsed = 0;
-  shakeIntensity = 0;
 }
 
 function clientToCanvas(ev) {
@@ -671,11 +687,14 @@ function hitHalfWidth(b) {
     case 'chute_open': return Math.max(42, BW * 1.05);
     case 'chute_closed': return Math.max(18, BW * 0.5);
     case 'balloon': return Math.max(26, BW * 0.78);
-    case 'pumpkin': return Math.max(28, BW * 1.60);
+    case 'pumpkin': return Math.max(28, BW * 0.96);
+    case 'watermelon': return Math.max(48, BW * 1.72);
+    case 'watermellon': return Math.max(48, BW * 1.72);
+    case 'chicken': return Math.max(40, BW * 1.45);
     case 'mug': return Math.max(42, BW * 1.45);
     case 'gift': return Math.max(22, BW * 0.82);
-    case 'pinata': return Math.max(40, BW * 1.15);
-    case 'anvil': return Math.max(34, BW * 1.17);
+    case 'pinata': return Math.max(32, BW * 1.10);
+    case 'anvil': return Math.max(36, BW * 1.20);
     case 'microphone': return Math.max(28, BW * 0.95);
     default: return Math.max(26, BW * 0.52);
   }
@@ -710,65 +729,16 @@ function drawBg() {
   grd.addColorStop(1, skyBot);
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, W, GY);
-
-  // sunlight glow — top-left radial wash
-  const sunGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, 320);
-  sunGrd.addColorStop(0,   'rgba(255,240,140,0.28)');
-  sunGrd.addColorStop(0.5, 'rgba(255,220,80,0.10)');
-  sunGrd.addColorStop(1,   'rgba(255,200,60,0)');
-  ctx.fillStyle = sunGrd;
-  ctx.fillRect(0, 0, W, GY);
-
-  // clouds — static, near top, biased to the right
-  ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,0.52)';
-  function drawCloud(cx, cy, scale) {
-    const puffs = [
-      [0,    0,    scale * 22],
-      [-28,  8,    scale * 15],
-      [ 28,  8,    scale * 15],
-      [-14,  -6,   scale * 16],
-      [ 14,  -6,   scale * 16],
-    ];
-    for (const [dx, dy, r] of puffs) {
-      ctx.beginPath();
-      ctx.arc(cx + dx * scale, cy + dy * scale, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  drawCloud(540, 38, 1.0);
-  drawCloud(610, 60, 0.70);
-  drawCloud(480, 72, 0.55);
-  ctx.restore();
-
   ctx.strokeStyle = 'rgba(0,90,180,0.07)'; ctx.lineWidth = 1;
   const gridStep = 5;
   for (let m = gridStep; m <= 30; m += gridStep) {
     const y = GY - m * PPM; if (y < 0) break;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
-  // concrete fill
-  const groundGrd = ctx.createLinearGradient(0, GY, 0, H);
-  groundGrd.addColorStop(0, '#a0a8b0');
-  groundGrd.addColorStop(1, '#7a8088');
-  ctx.fillStyle = groundGrd;
+  ctx.fillStyle = '#7a5c38';
   ctx.fillRect(0, GY, W, H - GY);
-
-  // surface highlight seam
-  ctx.fillStyle = '#b8c0c8';
-  ctx.fillRect(0, GY, W, 3);
-
-  // concrete texture: faint panel cracks
-  ctx.save();
-  ctx.strokeStyle = 'rgba(90,98,108,0.45)';
-  ctx.lineWidth = 1;
-  const panelW = 80;
-  for (let x = panelW; x < W; x += panelW) {
-    ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, H); ctx.stroke();
-  }
-  ctx.strokeStyle = 'rgba(90,98,108,0.3)';
-  ctx.beginPath(); ctx.moveTo(0, GY + 12); ctx.lineTo(W, GY + 12); ctx.stroke();
-  ctx.restore();
+  ctx.fillStyle = '#a67c48';
+  ctx.fillRect(0, GY, W, 4);
 }
 
 function drawRuler() {
@@ -800,7 +770,7 @@ function drawBadge(b, topY) {
   ctx.save(); ctx.fillStyle = 'rgba(255,252,235,0.98)'; ctx.strokeStyle = b.color; ctx.lineWidth = 2;
   rr(b.cx - 34, badgeY - 16, 68, 24, 8); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#3a2800'; ctx.font = 'bold 12px ui-monospace, monospace'; ctx.textAlign = 'center';
-  ctx.fillText(b.landTime.toFixed(1) + ' s', b.cx, badgeY + 1); ctx.restore();
+  ctx.fillText(b.landTime.toFixed(2) + ' s', b.cx, badgeY + 1); ctx.restore();
 }
 
 function drawIdleLine(b) {
@@ -825,13 +795,6 @@ function objTopY(b) {
       const ry = Math.max(8,Math.round(34*s)), knotH = Math.max(2,Math.round(5*s));
       return by - knotH - ry*2;
     }
-    case 'pumpkin': {
-      const ry = Math.max(12, Math.round(32 * s));
-      const stemH = Math.max(4, Math.round(7 * s));
-      return by - 2 * ry - stemH;
-    }
-    case 'pinata': return by - Math.max(50, Math.round(105 * s));
-    case 'anvil':  return by - Math.max(28, Math.round(46 * s));
     default: return by - TH;
   }
 }
@@ -937,22 +900,20 @@ function drawChuteOpenShape(b) {
   const headCY = torsoT - headR, headTop = headCY - headR;
   const domeY  = headTop - lineLen - domeR;
   ctx.save();
-  if (!b.landed) {
-    const panels = 6;
-    for (let i = 0; i < panels; i++) {
-      const a1 = Math.PI + (i / panels) * Math.PI;
-      const a2 = Math.PI + ((i + 1) / panels) * Math.PI;
-      ctx.beginPath(); ctx.moveTo(cx, domeY); ctx.arc(cx, domeY, domeR, a1, a2); ctx.closePath();
-      ctx.fillStyle = '#f0f0f0'; ctx.fill();
-    }
-    ctx.strokeStyle = '#888'; ctx.lineWidth = Math.max(0.5, 0.8 * s);
-    ctx.beginPath(); ctx.arc(cx, domeY, domeR, Math.PI, 2 * Math.PI); ctx.stroke();
-    ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = Math.max(0.3, 0.5 * s);
-    const shoulderY = torsoT + bodyH * 0.15;
-    for (let i = 0; i < 4; i++) {
-      const lx = cx + (i / 3 * 0.8 - 0.4) * 2 * domeR;
-      ctx.beginPath(); ctx.moveTo(lx, domeY); ctx.lineTo(cx + (i < 2 ? -bodyW*0.4 : bodyW*0.4), shoulderY); ctx.stroke();
-    }
+  const panels = 6;
+  for (let i = 0; i < panels; i++) {
+    const a1 = Math.PI + (i / panels) * Math.PI;
+    const a2 = Math.PI + ((i + 1) / panels) * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, domeY); ctx.arc(cx, domeY, domeR, a1, a2); ctx.closePath();
+    ctx.fillStyle = '#f0f0f0'; ctx.fill();
+  }
+  ctx.strokeStyle = '#888'; ctx.lineWidth = Math.max(0.5, 0.8 * s);
+  ctx.beginPath(); ctx.arc(cx, domeY, domeR, Math.PI, 2 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = Math.max(0.3, 0.5 * s);
+  const shoulderY = torsoT + bodyH * 0.15;
+  for (let i = 0; i < 4; i++) {
+    const lx = cx + (i / 3 * 0.8 - 0.4) * 2 * domeR;
+    ctx.beginPath(); ctx.moveTo(lx, domeY); ctx.lineTo(cx + (i < 2 ? -bodyW*0.4 : bodyW*0.4), shoulderY); ctx.stroke();
   }
   ctx.lineCap = 'round'; ctx.strokeStyle = '#3a5020'; ctx.lineWidth = Math.max(1, 3 * s);
   ctx.beginPath();
@@ -1017,67 +978,88 @@ function drawBowlingShape(b) {
   ctx.restore();
 }
 
+function drawWatermelonShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const rx = Math.max(16, Math.round(43 * s));
+  const ry = Math.max(14, Math.round(36 * s));
+  const cy = by - ry;
+  ctx.save();
+  ctx.fillStyle = '#1f6c35';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#174f27';
+  ctx.lineWidth = Math.max(1, 1.8 * s);
+  ctx.stroke();
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx * 0.98, ry * 0.98, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = '#9ddf8f';
+  ctx.lineWidth = Math.max(0.8, 1.2 * s);
+  for (let i = -4; i <= 4; i++) {
+    const y = cy + i * (ry * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(cx - rx * 0.95, y);
+    ctx.lineTo(cx + rx * 0.95, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#cfecc6';
+  ctx.lineWidth = Math.max(0.7, 1.0 * s);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx * 0.92, ry * 0.92, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPumpkinShape(b) {
   const cx = b.cx, by = b.bottomY;
   const s = Math.max(0.5, BW / 40);
-
-  const ry  = Math.max(12, Math.round(32 * s));
-  const rxC = Math.max(9,  Math.round(28 * s));
-  const rxM = Math.max(7,  Math.round(23 * s));
-  const rxO = Math.max(6,  Math.round(17 * s));
-  const sp  = Math.max(7,  Math.round(18 * s));
-
+  const rx = Math.max(9, Math.round(24 * s));
+  const ry = Math.max(8, Math.round(20 * s));
   const cy = by - ry;
-
-  const lobes = [
-    [-2 * sp, rxO],
-    [ 2 * sp, rxO],
-    [-sp,     rxM],
-    [ sp,     rxM],
-    [0,       rxC],  // center drawn last, sits on top
-  ];
-
   ctx.save();
   ctx.fillStyle = '#e58a2f';
-
-  for (const [dx, rx] of lobes) {
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#bb6620'; ctx.lineWidth = Math.max(1, 2.2 * s);
+  for (let i = -2; i <= 2; i++) {
     ctx.beginPath();
-    ctx.ellipse(cx + dx, cy, rx, ry, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.ellipse(cx + i * rx * 0.18, cy, rx * (0.18 + Math.abs(i) * 0.03), ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
-
-  ctx.strokeStyle = '#bb6620';
-  ctx.lineWidth = Math.max(1, 1.2 * s);
-  const arc = Math.PI * 0.45;
-
-  for (const [dx, rx] of lobes) {
-    if (dx === 0) continue;
-    const lx = cx + dx;
-    if (dx < 0) {
-      ctx.beginPath();
-      ctx.ellipse(lx, cy, rx, ry, 0, Math.PI - arc, Math.PI + arc);
-      ctx.stroke();
-    } else {
-      ctx.beginPath();
-      ctx.ellipse(lx, cy, rx, ry, 0, -arc, arc);
-      ctx.stroke();
-    }
-  }
-
-  // center vertical line
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - ry);
-  ctx.lineTo(cx, cy + ry);
-  ctx.stroke();
-
-  ctx.restore();
-
-  // stem drawn after restore so it paints on top, outside the save/restore block
-  const stemW = Math.max(3, Math.round(rxC * 0.35));
-  const stemH = Math.max(4, Math.round(7 * s));
   ctx.fillStyle = '#4d7b2f';
-  rr(cx - stemW * 0.5, cy - ry - stemH, stemW, stemH, Math.max(1, Math.round(1.5 * s)));
+  rr(cx - rx * 0.12, cy - ry - 9 * s, rx * 0.24, 9 * s, 2 * s);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawChickenShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const bodyW = Math.max(20, Math.round(43 * s));
+  const bodyH = Math.max(12, Math.round(20 * s));
+  const bodyY = by - bodyH - 2 * s;
+  ctx.save();
+  ctx.fillStyle = '#f0d8a0';
+  rr(cx - bodyW / 2, bodyY, bodyW, bodyH, bodyH / 2);
+  ctx.fill();
+  ctx.strokeStyle = '#b78d55'; ctx.lineWidth = Math.max(0.8, 1.5 * s);
+  rr(cx - bodyW / 2, bodyY, bodyW, bodyH, bodyH / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + bodyW * 0.5, bodyY + bodyH * 0.45);
+  ctx.lineTo(cx + bodyW * 0.9, bodyY + bodyH * 0.2);
+  ctx.lineTo(cx + bodyW * 0.9, bodyY + bodyH * 0.7);
+  ctx.closePath();
+  ctx.fillStyle = '#d3a15e';
+  ctx.fill();
+  ctx.fillStyle = '#bf7a2f';
+  ctx.beginPath();
+  ctx.arc(cx - bodyW * 0.35, bodyY + bodyH * 0.22, Math.max(2, 3 * s), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawMugShape(b) {
@@ -1140,149 +1122,70 @@ function drawGiftShape(b) {
 
 function drawPinataShape(b) {
   const cx = b.cx, by = b.bottomY;
-  const s  = Math.max(0.5, BW / 40);
-  const h  = Math.max(50, Math.round(105 * s));
-  const sc = h / 360;  // shape-to-screen scale (shape bottom=370, top=10, range=360)
-
-  // path defined once, called for fill then stroke
-  function pinataPath() {
-    ctx.beginPath();
-    ctx.moveTo(83, 36);
-    ctx.bezierCurveTo(83, 20, 102, 20, 102, 36);
-    ctx.bezierCurveTo(104, 52, 106, 74, 108, 88);
-    ctx.bezierCurveTo(114, 85, 120, 82, 124, 82);
-    ctx.bezierCurveTo(126, 76, 126, 48, 126, 36);
-    ctx.bezierCurveTo(126, 20, 147, 20, 147, 36);
-    ctx.bezierCurveTo(149, 52, 153, 74, 156, 82);
-    ctx.bezierCurveTo(164, 81, 172, 88, 174, 100);
-    ctx.lineTo(174, 145);
-    ctx.bezierCurveTo(175, 158, 168, 168, 156, 168);
-    ctx.lineTo(356, 168);
-    ctx.bezierCurveTo(372, 168, 378, 176, 378, 192);
-    ctx.lineTo(378, 256);
-    ctx.bezierCurveTo(378, 268, 370, 272, 362, 272);
-    ctx.lineTo(362, 358);
-    ctx.bezierCurveTo(362, 366, 356, 370, 348, 370);
-    ctx.lineTo(322, 370);
-    ctx.bezierCurveTo(314, 370, 310, 366, 310, 358);
-    ctx.lineTo(310, 272);
-    ctx.lineTo(296, 272);
-    ctx.lineTo(296, 358);
-    ctx.bezierCurveTo(296, 366, 290, 370, 282, 370);
-    ctx.lineTo(256, 370);
-    ctx.bezierCurveTo(248, 370, 244, 366, 244, 358);
-    ctx.lineTo(244, 272);
-    ctx.lineTo(174, 272);
-    ctx.lineTo(174, 358);
-    ctx.bezierCurveTo(174, 366, 168, 370, 160, 370);
-    ctx.lineTo(132, 370);
-    ctx.bezierCurveTo(124, 370, 120, 366, 120, 358);
-    ctx.lineTo(120, 272);
-    ctx.lineTo(106, 272);
-    ctx.lineTo(106, 358);
-    ctx.bezierCurveTo(106, 366, 100, 370, 92, 370);
-    ctx.lineTo(64, 370);
-    ctx.bezierCurveTo(56, 370, 52, 366, 52, 358);
-    ctx.lineTo(52, 272);
-    ctx.lineTo(52, 205);
-    ctx.bezierCurveTo(50, 192, 54, 176, 64, 170);
-    ctx.bezierCurveTo(54, 160, 38, 145, 26, 135);
-    ctx.bezierCurveTo(14, 130, 8, 120, 10, 108);
-    ctx.bezierCurveTo(12, 96, 22, 86, 32, 82);
-    ctx.bezierCurveTo(36, 78, 40, 74, 46, 72);
-    ctx.bezierCurveTo(50, 70, 64, 70, 80, 72);
-    ctx.bezierCurveTo(82, 66, 83, 50, 83, 36);
-    ctx.closePath();
-  }
-
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(29, Math.round(58 * s));
+  const h = Math.max(25, Math.round(43 * s));
+  const y = by - h;
   ctx.save();
-  // map shape center (194, 370) → screen (cx, by)
-  ctx.translate(cx, by);
-  ctx.scale(sc, sc);
-  ctx.translate(-194, -370);
-
-  // hanging string
-  ctx.beginPath();
-  ctx.moveTo(112, 10);
-  ctx.lineTo(112, 72);
-  ctx.strokeStyle = '#ccc';
-  ctx.lineWidth = Math.max(1, s) / sc;
-  ctx.stroke();
-
-  // gradient spans the full original shape bounds
-  const grd = ctx.createLinearGradient(5, 20, 378, 372);
-  grd.addColorStop(0,    '#ff6a74');
+  ctx.strokeStyle = '#d8d8d8';
+  ctx.lineWidth = Math.max(1, 1.4 * s);
+  ctx.beginPath(); ctx.moveTo(cx, y - 10 * s); ctx.lineTo(cx, y - 1 * s); ctx.stroke();
+  const grd = ctx.createLinearGradient(cx - w / 2, y, cx + w / 2, y + h);
+  grd.addColorStop(0, '#ff6a74');
   grd.addColorStop(0.35, '#ffd65a');
-  grd.addColorStop(0.7,  '#58d6ff');
-  grd.addColorStop(1,    '#9c7cff');
-
-  pinataPath();
+  grd.addColorStop(0.7, '#58d6ff');
+  grd.addColorStop(1, '#9c7cff');
   ctx.fillStyle = grd;
+  rr(cx - w / 2, y, w, h, Math.max(2, 4 * s));
   ctx.fill();
-
-  pinataPath();
-  ctx.strokeStyle = '#bbb';
-  ctx.lineWidth = Math.max(1, 1.5 * s) / sc;
+  ctx.strokeStyle = '#9156a8';
+  ctx.lineWidth = Math.max(1, 1.5 * s);
+  rr(cx - w / 2, y, w, h, Math.max(2, 4 * s));
   ctx.stroke();
-
+  ctx.fillStyle = '#ffe36d';
+  const fringeY = y + h;
+  for (let i = -3; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx + i * (w / 8), fringeY - 1);
+    ctx.lineTo(cx + i * (w / 8) + (i % 2 ? 2 : -2) * s, fringeY + 6 * s);
+    ctx.lineTo(cx + i * (w / 8) + (i % 2 ? 4 : -4) * s, fringeY - 1);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 
 function drawAnvilShape(b) {
   const cx = b.cx, by = b.bottomY;
-  const s  = Math.max(0.5, BW / 40);
-  const h  = Math.max(28, Math.round(46 * s));
-  const sc = h / 190;   // shape height in original coords = 240-50 = 190
-
+  const s = Math.max(0.5, BW / 40);
+  const w = Math.max(33, Math.round(65 * s));
+  const h = Math.max(22, Math.round(32 * s));
+  const y = by - h;
   ctx.save();
-  ctx.translate(cx, by);
-  ctx.scale(sc, sc);
-  ctx.translate(-201, -240);   // center bottom of shape → (cx, by)
-
-  const fill = ctx.createLinearGradient(201, 50, 201, 240);
-  fill.addColorStop(0, '#8a939f');
-  fill.addColorStop(1, '#5f6773');
-  const ink = '#434b57';
-  const lw  = Math.max(1, 1.4 * s) / sc;
-
-  ctx.beginPath();
-  ctx.moveTo(128, 50);
-  ctx.lineTo(378, 50);
-  ctx.lineTo(378, 80);
-  ctx.bezierCurveTo(394, 90, 390, 155, 265, 175);
-  ctx.bezierCurveTo(245, 190, 300, 183, 318, 193);
-  ctx.lineTo(318, 240);
-  ctx.lineTo(82, 240);
-  ctx.lineTo(82, 193);
-  ctx.bezierCurveTo(66, 197, 128, 175, 150, 175);
-  ctx.bezierCurveTo(145, 165, 84, 158, 80, 154);
-  ctx.bezierCurveTo(18, 145, 8, 84, 18, 80);
-  ctx.lineTo(128, 80);
-  ctx.lineTo(128, 50);
-  ctx.fillStyle = fill;
+  const grd = ctx.createLinearGradient(cx - w / 2, y, cx + w / 2, y + h);
+  grd.addColorStop(0, '#8a939f');
+  grd.addColorStop(1, '#5f6773');
+  ctx.fillStyle = grd;
+  rr(cx - w / 2, y + h * 0.32, w, h * 0.68, Math.max(2, 3 * s));
   ctx.fill();
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = lw;
+  ctx.strokeStyle = '#434b57';
+  ctx.lineWidth = Math.max(1, 1.4 * s);
+  rr(cx - w / 2, y + h * 0.32, w, h * 0.68, Math.max(2, 3 * s));
   ctx.stroke();
-
-  // Step line
   ctx.beginPath();
-  ctx.moveTo(128, 80);
-  ctx.lineTo(378, 80);
+  ctx.moveTo(cx - w * 0.62, y + h * 0.42);
+  ctx.lineTo(cx + w * 0.58, y + h * 0.42);
+  ctx.lineTo(cx + w * 0.75, y + h * 0.08);
+  ctx.lineTo(cx - w * 0.42, y + h * 0.08);
+  ctx.closePath();
+  ctx.fillStyle = '#717b88';
+  ctx.fill();
   ctx.stroke();
-
-  // Arch (concave down)
-  ctx.beginPath();
-  ctx.moveTo(150, 193);
-  ctx.quadraticCurveTo(200, 234, 250, 193);
+  ctx.fillStyle = '#9aa3af';
+  rr(cx - w * 0.12, y - h * 0.16, w * 0.24, h * 0.5, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#434b57';
   ctx.stroke();
-
-  // Base dividers
-  ctx.beginPath();
-  ctx.moveTo(150, 193); ctx.lineTo(150, 240);
-  ctx.moveTo(250, 193); ctx.lineTo(250, 240);
-  ctx.stroke();
-
   ctx.restore();
 }
 
@@ -1402,7 +1305,9 @@ function drawObject(b) {
   const shadowR = b.type === 'bowling'    ? Math.max(5, BW * 0.7)
                 : b.type === 'chute_open' ? Math.max(8, BW * 0.95)
                 : b.type === 'balloon'   ? Math.max(6, BW * 0.65)
+                : b.type === 'watermelon' || b.type === 'watermellon' ? Math.max(8, BW * 0.95)
                 : b.type === 'mug'       ? Math.max(7, BW * 0.82)
+                : b.type === 'chicken'   ? Math.max(6, BW * 0.72)
                 : b.type === 'microphone' ? Math.max(7, BW * 0.78)
                 : BW * 0.5;
   drawShadow(b, shadowR);
@@ -1413,6 +1318,9 @@ function drawObject(b) {
     case 'balloon':      drawBalloonShape(b);     break;
     case 'bowling':      drawBowlingShape(b);     break;
     case 'pumpkin':      drawPumpkinShape(b);     break;
+    case 'watermelon':   drawWatermelonShape(b);  break;
+    case 'watermellon':  drawWatermelonShape(b);  break;
+    case 'chicken':      drawChickenShape(b);     break;
     case 'mug':          drawMugShape(b);         break;
     case 'gift':         drawGiftShape(b);        break;
     case 'pinata':       drawPinataShape(b);      break;
@@ -1432,6 +1340,9 @@ function objectThumbLayoutScale(type) {
     case 'balloon': return 0.42;
     case 'bowling': return 0.52;
     case 'pumpkin': return 0.58;
+    case 'watermelon': return 0.58;
+    case 'watermellon': return 0.58;
+    case 'chicken': return 0.74;
     case 'mug': return 0.78;
     case 'gift': return 0.62;
     case 'pinata': return 0.66;
@@ -1449,6 +1360,9 @@ function drawObjectThumbShape(b) {
     case 'balloon':      drawBalloonShape(b);     break;
     case 'bowling':      drawBowlingShape(b);     break;
     case 'pumpkin':      drawPumpkinShape(b);     break;
+    case 'watermelon':   drawWatermelonShape(b);  break;
+    case 'watermellon':  drawWatermelonShape(b);  break;
+    case 'chicken':      drawChickenShape(b);     break;
     case 'mug':          drawMugShape(b);         break;
     case 'gift':         drawGiftShape(b);        break;
     case 'pinata':       drawPinataShape(b);      break;
@@ -1475,7 +1389,6 @@ function refreshObjectChoiceThumbs() {
       cx: 0,
       bottomY: 0,
       shattered: false,
-      stain: null,
       landed: false,
     };
     if (type === 'balloon') {
@@ -1524,22 +1437,6 @@ function refreshObjectChoiceThumbs() {
   });
 }
 
-function drawStain(stain) {
-  ctx.save();
-  ctx.fillStyle = 'rgba(205, 75, 5, 0.68)';
-  // main puddle
-  ctx.beginPath();
-  ctx.ellipse(stain.cx, GY, stain.mainRx, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // splatter blobs
-  for (const blob of stain.blobs) {
-    ctx.beginPath();
-    ctx.ellipse(stain.cx + blob.dx, GY - 1, blob.rx, blob.ry, blob.rot, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
 function drawSparks(b) {
   for (const p of b.sparks) {
     ctx.save(); ctx.globalAlpha = Math.max(0, p.life);
@@ -1549,83 +1446,8 @@ function drawSparks(b) {
       ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
       ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
     } else if (p.type === 'drop') {
-      // filled liquid drop with small specular highlight
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = (p.color || b.color) + 'bb'; ctx.fill();
-      ctx.beginPath(); ctx.arc(p.x - p.r * 0.28, p.y - p.r * 0.28, p.r * 0.32, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
-    } else if (p.type === 'jack') {
-      // squiggly spring rising from gift box top, smiley face on end
-      const ext      = p.progress;
-      const totalH   = p.springH * ext;
-      const coils    = 6;
-      const coilH    = totalH / coils;
-      const amp      = p.faceR * 0.65;
-      const faceY    = p.y - totalH - p.faceR;
-      // spring
-      ctx.strokeStyle = '#aaa';
-      ctx.lineWidth   = Math.max(1, p.faceR * 0.15);
-      ctx.lineCap     = 'round';
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      for (let i = 0; i < coils; i++) {
-        const mid = p.y - (i + 0.5) * coilH;
-        const end = p.y - (i + 1)   * coilH;
-        ctx.quadraticCurveTo(p.x + (i % 2 === 0 ? amp : -amp), mid, p.x, end);
-      }
-      ctx.stroke();
-      // face circle
-      ctx.fillStyle   = '#FFD700';
-      ctx.strokeStyle = '#C8A000';
-      ctx.lineWidth   = Math.max(1, p.faceR * 0.12);
-      ctx.beginPath(); ctx.arc(p.x, faceY, p.faceR, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-      // triangular party hat
-      const hatBase = p.faceR * 1.3;
-      const hatH    = p.faceR * 1.6;
-      const hatTop  = faceY - p.faceR - hatH;
-      ctx.beginPath();
-      ctx.moveTo(p.x - hatBase / 2, faceY - p.faceR * 0.7);
-      ctx.lineTo(p.x + hatBase / 2, faceY - p.faceR * 0.7);
-      ctx.lineTo(p.x, hatTop);
-      ctx.closePath();
-      ctx.fillStyle   = '#e03050';
-      ctx.fill();
-      ctx.strokeStyle = '#a01030';
-      ctx.lineWidth   = Math.max(1, p.faceR * 0.1);
-      ctx.stroke();
-      // hat stripe
-      ctx.strokeStyle = '#FFD700';
-      ctx.lineWidth   = Math.max(1, p.faceR * 0.12);
-      ctx.beginPath();
-      ctx.moveTo(p.x - hatBase * 0.3, faceY - p.faceR * 0.7 - hatH * 0.3);
-      ctx.lineTo(p.x + hatBase * 0.15, faceY - p.faceR * 0.7 - hatH * 0.3);
-      ctx.stroke();
-      // eyes
-      const eyeR = Math.max(1, p.faceR * 0.14);
-      ctx.fillStyle = '#333';
-      ctx.beginPath();
-      ctx.arc(p.x - p.faceR * 0.32, faceY - p.faceR * 0.22, eyeR, 0, Math.PI * 2);
-      ctx.arc(p.x + p.faceR * 0.32, faceY - p.faceR * 0.22, eyeR, 0, Math.PI * 2);
-      ctx.fill();
-      // smile
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth   = Math.max(1, p.faceR * 0.12);
-      ctx.lineCap     = 'round';
-      ctx.beginPath();
-      ctx.arc(p.x, faceY + p.faceR * 0.08, p.faceR * 0.48, 0.25, Math.PI - 0.25);
-      ctx.stroke();
-    } else if (p.type === 'dome') {
-      // parachute canopy falling and fading after landing
-      const panels = 6;
-      for (let i = 0; i < panels; i++) {
-        const a1 = Math.PI + (i / panels) * Math.PI;
-        const a2 = Math.PI + ((i + 1) / panels) * Math.PI;
-        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.arc(p.x, p.y, p.r, a1, a2); ctx.closePath();
-        ctx.fillStyle = '#f0f0f0'; ctx.fill();
-      }
-      ctx.strokeStyle = '#888'; ctx.lineWidth = Math.max(0.5, p.r * 0.02);
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, Math.PI, 2 * Math.PI); ctx.stroke();
+      ctx.fillStyle = b.color + 'cc';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
     } else {
       ctx.fillStyle = '#a08060';
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
@@ -1635,10 +1457,10 @@ function drawSparks(b) {
 }
 
 function spawnSparks(b) {
-  if (b.type === 'bottle' && b.h === 30) {
-    // full shatter at max drop height — applies to both full and partial bottles
+  const isMax = b.type === 'bottle' && b.h === 30 && b.water === 100;
+  if (isMax) {
     b.shattered = true;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       const a = -Math.PI * (.04 + Math.random() * .92);
       const s = 100 + Math.random() * 280;
       b.sparks.push({type: 'frag', x: b.cx + (Math.random() - .5) * BW, y: GY - BH * .5,
@@ -1647,309 +1469,34 @@ function spawnSparks(b) {
         w: 4 + Math.random() * 14, h: 3 + Math.random() * 8,
         color: b.color, edge: b.cap, life: 1.1 + Math.random() * .4});
     }
-    if (b.water > 0) {
-      for (let i = 0; i < 28; i++) {
-        const a = -Math.PI * (.06 + Math.random() * .88);
-        const s = 80 + Math.random() * 320;
-        b.sparks.push({type: 'drop', x: b.cx + (Math.random() - .5) * BW * .7, y: GY - 4,
-          vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2 + Math.random() * 4, life: .7 + Math.random() * .6});
-      }
+    for (let i = 0; i < 28; i++) {
+      const a = -Math.PI * (.06 + Math.random() * .88);
+      const s = 80 + Math.random() * 320;
+      b.sparks.push({type: 'drop', x: b.cx + (Math.random() - .5) * BW * .7, y: GY - 4,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2 + Math.random() * 4, life: .7 + Math.random() * .6});
     }
-    return;
-  }
-
-  if (b.type === 'mug' && b.h === 30) {
-    // mug shatters at max drop height — ceramic shards + coffee spray
-    b.shattered = true;
-    const s = Math.max(0.5, BW / 40);
-    const w = Math.max(21, Math.round(39 * s));
-    const h = Math.max(26, Math.round(43 * s));
-    const midY = GY - h * 0.5;
-    for (let i = 0; i < 14; i++) {
-      const a  = -Math.PI * (0.04 + Math.random() * 0.92);
-      const sp = 120 + Math.random() * 260;
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * w, y: midY,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 14,
-        w: 5 + Math.random() * 12, h: 4 + Math.random() * 8,
-        color: b.color || '#f2f5fa', edge: '#bdc7d5', life: 1.1 + Math.random() * 0.4});
+  } else {
+    const n = 4 + Math.round(b.h * .6);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI * (.12 + Math.random() * .76);
+      const s = 25 + Math.random() * 55;
+      b.sparks.push({type: 'dust', x: b.cx + (Math.random() - .5) * BW * .9, y: GY - 2,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 1.5 + Math.random() * 2, life: .4 + Math.random() * .3});
     }
-    for (let i = 0; i < 24; i++) {
-      const a  = -Math.PI * (0.06 + Math.random() * 0.88);
-      const sp = 90 + Math.random() * 300;
-      b.sparks.push({type: 'drop', color: '#6f4930',
-        x: b.cx + (Math.random() - 0.5) * w * 0.7, y: GY - h * 0.3,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        r: 2 + Math.random() * 4, life: 0.7 + Math.random() * 0.6});
-    }
-    return;
-  }
-
-  if (b.type === 'pinata' && b.h === 30) {
-    // pinata explodes in multi-color confetti at max drop height
-    b.shattered = true;
-    const s    = Math.max(0.5, BW / 40);
-    const h    = Math.max(50, Math.round(105 * s));
-    const hw   = Math.round(184 * (h / 360));  // half-width of shape
-    const midY = GY - h * 0.5;
-    const palette = ['#ff6a74','#ffd65a','#58d6ff','#9c7cff','#ff9f40','#3de88a','#ff4ecb','#fff176'];
-    for (let i = 0; i < 55; i++) {
-      const a   = -Math.PI * (0.02 + Math.random() * 0.96);
-      const sp  = 60 + Math.random() * 340;
-      const col = palette[Math.floor(Math.random() * palette.length)];
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * hw, y: midY + (Math.random() - 0.5) * h * 0.4,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 22,
-        w: 4 + Math.random() * 9, h: 2 + Math.random() * 4,
-        color: col, edge: col, life: 1.3 + Math.random() * 0.7});
-    }
-    return;
-  }
-
-  if (b.type === 'pumpkin' && b.h === 30) {
-    // pumpkin smashes into orange goop at max drop height
-    b.shattered = true;
-    const s   = Math.max(0.5, BW / 40);
-    const ry  = Math.max(12, Math.round(32 * s));
-    const rxC = Math.max(9,  Math.round(28 * s));
-    const sp  = Math.max(7,  Math.round(18 * s));
-    const hw  = 2 * sp + rxC;   // approx half-width of pumpkin
-    const cy  = GY - ry;        // center height
-    // orange pumpkin chunks
-    for (let i = 0; i < 14; i++) {
-      const a  = -Math.PI * (0.04 + Math.random() * 0.92);
-      const spd = 100 + Math.random() * 260;
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * hw * 1.2, y: cy + (Math.random() - 0.5) * ry,
-        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 16,
-        w: 5 + Math.random() * 12, h: 4 + Math.random() * 10,
-        color: '#e8620a', edge: '#a84000', life: 1.0 + Math.random() * 0.5});
-    }
-    // orange goop drops
-    for (let i = 0; i < 44; i++) {
-      const a  = -Math.PI * (0.05 + Math.random() * 0.90);
-      const spd = 70 + Math.random() * 310;
-      b.sparks.push({type: 'drop', color: '#e8720a',
-        x: b.cx + (Math.random() - 0.5) * hw, y: cy + (Math.random() - 0.5) * ry * 0.8,
-        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-        r: 2 + Math.random() * 5, life: 0.8 + Math.random() * 0.6});
-    }
-    // persistent ground stain — pre-compute splatter blobs
-    const stainBlobs = [];
-    for (let i = 0; i < 10; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist  = hw * (0.5 + Math.random() * 1.1);
-      stainBlobs.push({
-        dx: Math.cos(angle) * dist,
-        rx: 4 + Math.random() * 12,
-        ry: 2 + Math.random() * 5,
-        rot: Math.random() * Math.PI
-      });
-    }
-    b.stain = { cx: b.cx, mainRx: hw * 1.5, blobs: stainBlobs };
-    return;
-  }
-
-  if (b.type === 'gift' && b.h === 30) {
-    // jack-in-the-box pops out — gift box stays, spring + smiley rises from top
-    const s = Math.max(0.5, BW / 40);
-    const h = Math.max(22, Math.round(32 * s));
-    b.sparks.push({
-      type: 'jack',
-      x: b.cx,  y: GY - h,       // top of gift box
-      springH: h * 0.85,          // stays close to the box lid
-      faceR: Math.max(7, Math.round(10 * s)),
-      age: 0,  progress: 0,  life: 1.0
-    });
-    // small burst of confetti from the lid
-    const palette = ['#ff6a74','#ffd65a','#58d6ff','#9c7cff','#ff9f40','#3de88a'];
-    for (let i = 0; i < 18; i++) {
-      const a   = -Math.PI * (0.05 + Math.random() * 0.9);
-      const spd = 50 + Math.random() * 180;
-      const col = palette[Math.floor(Math.random() * palette.length)];
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * 14, y: GY - h,
-        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 18,
-        w: 3 + Math.random() * 6, h: 2 + Math.random() * 3,
-        color: col, edge: col, life: 0.8 + Math.random() * 0.5});
-    }
-    return;
-  }
-
-  if (b.type === 'microphone' && b.h === 30) {
-    // mic drops hard — dark body pieces + silver head chunks + bright sparks
-    b.shattered = true;
-    const s     = Math.max(0.5, BW / 40);
-    const bodyW = Math.max(24, Math.round(50 * s));
-    const bodyH = Math.max(8,  Math.round(13 * s));
-    const headR = Math.max(8,  Math.round(12 * s));
-    const midY  = GY - bodyH * 0.5;
-    // dark body fragments
-    for (let i = 0; i < 10; i++) {
-      const a   = -Math.PI * (0.04 + Math.random() * 0.92);
-      const sp  = 90 + Math.random() * 220;
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * bodyW, y: midY + (Math.random() - 0.5) * bodyH,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 18,
-        w: 5 + Math.random() * 11, h: 3 + Math.random() * 7,
-        color: Math.random() < 0.5 ? '#1a1d22' : '#34383f', edge: '#0a0c0f',
-        life: 1.0 + Math.random() * 0.4});
-    }
-    // silver mic-head chunks
-    for (let i = 0; i < 5; i++) {
-      const a  = -Math.PI * (0.08 + Math.random() * 0.84);
-      const sp = 60 + Math.random() * 170;
-      b.sparks.push({type: 'frag',
-        x: b.cx + bodyW * 0.38 + (Math.random() - 0.5) * headR, y: midY,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 14,
-        w: 3 + Math.random() * 8, h: 3 + Math.random() * 8,
-        color: '#c0c4cc', edge: '#808892', life: 0.9 + Math.random() * 0.4});
-    }
-    // bright electric sparks
-    for (let i = 0; i < 22; i++) {
-      const a  = -Math.PI * (0.02 + Math.random() * 0.96);
-      const sp = 130 + Math.random() * 370;
-      b.sparks.push({type: 'frag',
-        x: b.cx + (Math.random() - 0.5) * bodyW * 0.7, y: midY,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        rot: 0, rotSpd: 0,
-        w: 1.5 + Math.random() * 2.5, h: 1.5 + Math.random() * 2.5,
-        color: '#ffe84a', edge: '#ffaa00', life: 0.35 + Math.random() * 0.3});
-    }
-    return;
-  }
-
-  if (b.type === 'bottle' && b.water > 0) {
-    // liquid splash out the top of the bottle
-    const capY  = GY - TH;          // top of cap when bottle has just landed
-    const speed = 80 + Math.sqrt(b.h) * 60;   // faster splash from higher drops
-    const wf    = b.water / 100;
-
-    // tight upward jet from the neck opening
-    const jetCount = Math.round(5 + wf * 18);
-    for (let i = 0; i < jetCount; i++) {
-      const a = -(Math.PI / 2) + (Math.random() - 0.5) * 0.55;  // mostly straight up ±16°
-      const s = speed * (0.55 + Math.random() * 0.75);
-      b.sparks.push({type: 'drop',
-        x: b.cx + (Math.random() - 0.5) * NW * 0.9, y: capY,
-        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
-        r: 1.8 + Math.random() * 3, life: 0.65 + Math.random() * 0.5});
-    }
-
-    // wider arc spray fanning out from the neck
-    const sprayCount = Math.round(3 + wf * 10);
-    for (let i = 0; i < sprayCount; i++) {
-      const a = -Math.PI * (0.1 + Math.random() * 0.8);
-      const s = speed * (0.30 + Math.random() * 0.45);
-      b.sparks.push({type: 'drop',
-        x: b.cx + (Math.random() - 0.5) * NW, y: capY + CH,
-        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
-        r: 1 + Math.random() * 2, life: 0.4 + Math.random() * 0.4});
-    }
-  }
-
-  if (b.type === 'chute_open') {
-    // compute dome position matching drawChuteOpenShape geometry
-    const s = Math.max(0.5, BW / 40);
-    const headR   = Math.max(2, Math.round(7  * s));
-    const bodyH   = Math.max(4, Math.round(18 * s));
-    const legH    = Math.max(2, Math.round(10 * s));
-    const lineLen = Math.max(6, Math.round(28 * s));
-    const domeR   = Math.max(8, Math.round(38 * s));
-    const domeY   = GY - legH - bodyH - 2 * headR - lineLen - domeR;
-    // terminal velocity of the open parachute in px/s: v_t = sqrt(2mg / rho*cdA) * PPM
-    const { fixedMass, cdA } = OBJECT_TYPES.chute_open;
-    const vt = Math.sqrt(2 * fixedMass * g / (RHO * cdA)) * PPM;
-    b.sparks.push({
-      type: 'dome',
-      x: b.cx, y: domeY,
-      vx: (Math.random() - 0.5) * 6,
-      vy: vt,   // constant terminal-velocity drift, no gravity in tickSparks
-      r: domeR,
-      life: 1.0
-    });
-  }
-
-  if (b.type === 'mug') {
-    const s     = Math.max(0.5, BW / 40);
-    const w     = Math.max(21, Math.round(39 * s));
-    const h     = Math.max(26, Math.round(43 * s));
-    const rimY  = GY - h;
-    const speed = 70 + Math.sqrt(b.h) * 55;
-
-    // upward jet from the opening
-    const jetCount = Math.round(6 + b.h * 0.4);
-    for (let i = 0; i < jetCount; i++) {
-      const a  = -(Math.PI / 2) + (Math.random() - 0.5) * 0.6;
-      const sp = speed * (0.55 + Math.random() * 0.75);
-      b.sparks.push({type: 'drop', color: '#6f4930',
-        x: b.cx + (Math.random() - 0.5) * w * 0.5, y: rimY,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        r: 2 + Math.random() * 3.5, life: 0.6 + Math.random() * 0.5});
-    }
-
-    // wider arc spray over the rim
-    const sprayCount = Math.round(3 + b.h * 0.2);
-    for (let i = 0; i < sprayCount; i++) {
-      const a  = -Math.PI * (0.1 + Math.random() * 0.8);
-      const sp = speed * (0.25 + Math.random() * 0.4);
-      b.sparks.push({type: 'drop', color: '#6f4930',
-        x: b.cx + (Math.random() - 0.5) * w * 0.8, y: rimY,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        r: 1 + Math.random() * 2, life: 0.35 + Math.random() * 0.4});
-    }
-  }
-
-  if (b.type === 'anvil' && b.h === 30) {
-    shakeIntensity = 18;
-  }
-
-  // ground-impact dust for all objects
-  const n = 4 + Math.round(b.h * 0.5);
-  for (let i = 0; i < n; i++) {
-    const a = -Math.PI * (0.1 + Math.random() * 0.8);
-    const s = 20 + Math.random() * 50;
-    b.sparks.push({type: 'dust',
-      x: b.cx + (Math.random() - 0.5) * BW * 0.9, y: GY - 2,
-      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
-      r: 1.5 + Math.random() * 2, life: 0.4 + Math.random() * 0.3});
   }
 }
 
 function tickSparks(b, dt) {
   for (const p of b.sparks) {
-    if (p.type === 'jack') {
-      p.age += dt;
-      const rise   = 1 - Math.exp(-p.age * 6);                      // fast rise
-      const wobble = Math.sin(p.age * 14) * Math.exp(-p.age * 2.2) * 0.45; // damped bounce
-      p.progress = rise * (1 + wobble);
-      if (p.age > 2.2) p.life -= dt * 0.8;      // hold then fade
-      continue;
-    }
-    p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.type !== 'dome') p.vy += 920 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 920 * dt;
     if (p.type === 'frag') p.rot += p.rotSpd * dt;
-    p.life -= dt * (p.type === 'dust' ? 3.5 : p.type === 'dome' ? 0.75 : 2);
+    p.life -= dt * (p.type === 'dust' ? 3.5 : 2);
   }
-  b.sparks = b.sparks.filter(p => p.life > 0 && (p.type === 'dome' || p.type === 'jack' || p.y < GY + 30));
+  b.sparks = b.sparks.filter(p => p.life > 0 && p.y < GY + 30);
 }
 
 function draw() {
-  ctx.clearRect(0, 0, W, H);
-  ctx.save();
-  if (shakeIntensity > 0.2) {
-    const ox = (Math.random() - 0.5) * shakeIntensity;
-    const oy = (Math.random() - 0.5) * shakeIntensity;
-    ctx.translate(ox, oy);
-  }
-  drawBg(); drawRuler(); drawAirDensity();
-  BOTTLES.forEach(b => { if (b.stain) drawStain(b.stain); });
+  ctx.clearRect(0, 0, W, H); drawBg(); drawRuler(); drawAirDensity();
   BOTTLES.forEach((b, i) => {
     drawObject(b);
     if (isSetupState() && selectedIdx === i) {
@@ -1958,7 +1505,6 @@ function draw() {
     }
     drawSparks(b);
   });
-  ctx.restore();
 }
 
 function physicsStep(b, dt) {
@@ -1974,8 +1520,6 @@ function animate(ts) {
   elapsed = (ts - t0) / 1000;
   const frameDt = prevTs ? Math.min(.05, (ts - prevTs) / 1000) : 1 / 60;
   prevTs = ts;
-
-  if (shakeIntensity > 0) shakeIntensity = Math.max(0, shakeIntensity - shakeDecay * frameDt * shakeIntensity);
 
   let allLanded = true;
   for (const b of BOTTLES) {
@@ -2111,10 +1655,7 @@ function syncObjPanel() {
     }
     const isSurpriseBtn = btn.dataset.type === 'surprise';
     if (isSurpriseBtn) {
-      const isActiveSurprise = SURPRISE_TYPES.includes(targetObj.type);
-      btn.classList.toggle('selected', isActiveSurprise);
-      const lbl = document.getElementById('surpriseLabel');
-      if (lbl && !isActiveSurprise) lbl.textContent = '';
+      btn.classList.toggle('selected', SURPRISE_TYPES.includes(targetObj.type));
       return;
     }
     btn.classList.toggle('selected', !isBottleBtn && btn.dataset.type === targetObj.type);
@@ -2128,11 +1669,6 @@ document.querySelectorAll('.obj-choice').forEach(btn => {
     const bottleWaterPreset = parseFloat(btn.dataset.water);
     if (type === 'surprise') {
       type = nextSurpriseType();
-      const lbl = document.getElementById('surpriseLabel');
-      if (lbl) lbl.textContent = OBJECT_TYPES[type]?.name ?? type;
-    } else {
-      const lbl = document.getElementById('surpriseLabel');
-      if (lbl) lbl.textContent = '';
     }
     BOTTLES[objPanelTarget].type = type;
     if (type === 'bottle' && Number.isFinite(bottleWaterPreset)) {
@@ -2197,37 +1733,6 @@ requestAnimationFrame(() => refreshObjectChoiceThumbs());
 window.addEventListener('resize', () => {
   requestAnimationFrame(refreshObjectChoiceThumbs);
 });
-</script>
-
-<!-- Rotation hint for mobile portrait mode -->
-<div id="rotate-hint" style="
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.8);
-  color:white;
-  z-index:9999;
-  font-family:sans-serif;
-  text-align:center;
-  padding:2rem;
-">
-  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
-    For the best experience, please rotate your phone to landscape mode.
-  </div>
-</div>
-<script>
-  const rotateHint = document.getElementById('rotate-hint');
-  function isMobileLike() {
-    return window.innerWidth <= 900 || 'ontouchstart' in window;
-  }
-  function updateOrientationHint() {
-    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-    const shouldShow = isMobileLike() && isPortrait;
-    rotateHint.style.display = shouldShow ? 'block' : 'none';
-  }
-  updateOrientationHint();
-  window.addEventListener('resize', updateOrientationHint);
-  window.addEventListener('orientationchange', updateOrientationHint);
 </script>
 </body>
 </html>
