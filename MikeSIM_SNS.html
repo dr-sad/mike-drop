@@ -424,7 +424,44 @@ canvas#sim.dragging { cursor: grabbing; }
 </div>
 </div>
 
+<!-- 1. Rotation hint element (initially hidden) -->
+<div id="rotate-hint" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  z-index:9999;
+  font-family:sans-serif;
+  text-align:center;
+  padding:2rem;
+">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+    For the best experience, please rotate your phone to landscape mode.
+  </div>
+</div>
+
 <script>
+  const rotateHint = document.getElementById('rotate-hint');
+
+  function isMobileLike() {
+    // You can tune this - this is a simple heuristic
+    return window.innerWidth <= 900 || 'ontouchstart' in window;
+  }
+
+  function updateOrientationHint() {
+    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+    const shouldShow = isMobileLike() && isPortrait;
+    rotateHint.style.display = shouldShow ? 'block' : 'none';
+  }
+
+  // Initial check
+  updateOrientationHint();
+
+  // Update on orientation/resize changes
+  window.addEventListener('resize', updateOrientationHint);
+  window.addEventListener('orientationchange', updateOrientationHint);
+
 const cv = document.getElementById('sim');
 let ctx = cv.getContext('2d');
 
