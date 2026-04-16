@@ -481,8 +481,9 @@ const OBJECT_TYPES = {
   gift:         { name: 'gift',           fixedMass: 0.80,  cdA: 1.00 * 0.028 },
   pinata:       { name: 'pinata',         fixedMass: 0.50,  cdA: 1.35 * 0.040 },
   anvil:        { name: 'anvil',          fixedMass: 8.00,  cdA: 0.70 * 0.030 },
+  microphone:   { name: 'microphone',     fixedMass: 0.30,  cdA: 1.00 * 0.018 },
 };
-const SURPRISE_TYPES = ['watermellon', 'pumpkin', 'mug', 'gift', 'pinata', 'anvil'];
+const SURPRISE_TYPES = ['watermellon', 'pumpkin', 'mug', 'gift', 'pinata', 'anvil', 'microphone'];
 let surpriseCycleIndex = null;
 
 function nextSurpriseType() {
@@ -657,6 +658,7 @@ function hitHalfWidth(b) {
     case 'gift': return Math.max(22, BW * 0.82);
     case 'pinata': return Math.max(32, BW * 1.10);
     case 'anvil': return Math.max(36, BW * 1.20);
+    case 'microphone': return Math.max(28, BW * 0.95);
     default: return Math.max(26, BW * 0.52);
   }
 }
@@ -1150,6 +1152,67 @@ function drawAnvilShape(b) {
   ctx.restore();
 }
 
+function drawMicrophoneShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const bodyW = Math.max(24, Math.round(50 * s));
+  const bodyH = Math.max(8, Math.round(13 * s));
+  const bodyY = by - bodyH;
+  const headR = Math.max(8, Math.round(12 * s));
+  const headCx = cx + bodyW * 0.42 + headR * 0.35;
+  const headCy = bodyY + bodyH * 0.5;
+  ctx.save();
+  const bodyGrad = ctx.createLinearGradient(cx - bodyW / 2, bodyY, cx + bodyW / 2, bodyY + bodyH);
+  bodyGrad.addColorStop(0, '#1f2228');
+  bodyGrad.addColorStop(1, '#0b0d11');
+  ctx.fillStyle = bodyGrad;
+  rr(cx - bodyW / 2, bodyY, bodyW, bodyH, Math.max(2, 3 * s));
+  ctx.fill();
+  ctx.strokeStyle = '#2f333b';
+  ctx.lineWidth = Math.max(0.8, 1.2 * s);
+  ctx.stroke();
+
+  ctx.fillStyle = '#15181d';
+  ctx.beginPath();
+  ctx.ellipse(headCx - headR * 0.95, headCy, headR * 0.25, headR * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const headGrad = ctx.createRadialGradient(headCx - headR * 0.35, headCy - headR * 0.4, headR * 0.2, headCx, headCy, headR);
+  headGrad.addColorStop(0, '#f1f3f5');
+  headGrad.addColorStop(1, '#b8bec5');
+  ctx.fillStyle = headGrad;
+  ctx.beginPath();
+  ctx.ellipse(headCx, headCy, headR, headR * 0.9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#808892';
+  ctx.lineWidth = Math.max(0.8, 1.2 * s);
+  ctx.stroke();
+
+  // Fine grille lines on the mic head.
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(headCx, headCy, headR * 0.96, headR * 0.86, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(20, 24, 30, 0.55)';
+  ctx.lineWidth = Math.max(0.4, 0.7 * s);
+  const gridStep = Math.max(1.5, 2.2 * s);
+  for (let x = headCx - headR; x <= headCx + headR; x += gridStep) {
+    ctx.beginPath();
+    ctx.moveTo(x, headCy - headR);
+    ctx.lineTo(x, headCy + headR);
+    ctx.stroke();
+  }
+  for (let y = headCy - headR; y <= headCy + headR; y += gridStep) {
+    ctx.beginPath();
+    ctx.moveTo(headCx - headR, y);
+    ctx.lineTo(headCx + headR, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.restore();
+}
+
 function drawFeatherShape(b) {
   const cx = b.cx, by = b.bottomY;
   const fw = Math.max(3, BW * 0.32);
@@ -1208,6 +1271,7 @@ function drawObject(b) {
                 : b.type === 'watermelon' || b.type === 'watermellon' ? Math.max(8, BW * 0.95)
                 : b.type === 'mug'       ? Math.max(7, BW * 0.82)
                 : b.type === 'chicken'   ? Math.max(6, BW * 0.72)
+                : b.type === 'microphone' ? Math.max(7, BW * 0.78)
                 : BW * 0.5;
   drawShadow(b, shadowR);
 
@@ -1224,6 +1288,7 @@ function drawObject(b) {
     case 'gift':         drawGiftShape(b);        break;
     case 'pinata':       drawPinataShape(b);      break;
     case 'anvil':        drawAnvilShape(b);       break;
+    case 'microphone':   drawMicrophoneShape(b);  break;
     default:             drawBottleShape(b);      break;
   }
 
@@ -1245,6 +1310,7 @@ function objectThumbLayoutScale(type) {
     case 'gift': return 0.62;
     case 'pinata': return 0.66;
     case 'anvil': return 0.70;
+    case 'microphone': return 0.72;
     case 'surprise': return 1.12;
     default: return 0.55;
   }
@@ -1264,6 +1330,7 @@ function drawObjectThumbShape(b) {
     case 'gift':         drawGiftShape(b);        break;
     case 'pinata':       drawPinataShape(b);      break;
     case 'anvil':        drawAnvilShape(b);       break;
+    case 'microphone':   drawMicrophoneShape(b);  break;
     case 'surprise':     drawGiftShape(b);        break;
     default:             drawBottleShape(b);      break;
   }
