@@ -1,4 +1,4 @@
-# drop — Free fall simulation
+# mike-drop — Free fall simulation
 
 Static HTML simulation for learning about gravity and air resistance.
 
@@ -25,7 +25,7 @@ Follow the URL printed in the terminal (often **http://localhost:8080**).
 
 ## Put your changes on GitHub
 
-Remote repo: [github.com/dr-sad/drop](https://github.com/dr-sad/drop)
+Remote repo: [github.com/dr-sad/mike-drop](https://github.com/dr-sad/mike-drop)
 
 If this folder is **not** yet linked to GitHub:
 
@@ -35,7 +35,7 @@ git init
 git branch -M main
 git add MikeSIM_SNS.html index.html README.md
 git commit -m "Add free fall simulation and local preview files"
-git remote add origin https://github.com/dr-sad/drop.git
+git remote add origin https://github.com/dr-sad/mike-drop.git
 ```
 
 If the GitHub repo **already has commits** (for example an older `MikeSIM_SNS.html`), pull and merge once, then push:
@@ -49,11 +49,14 @@ If GitHub asks you to sign in, use **GitHub Desktop**, **SSH**, or a **personal 
 
 ## Optional: host a live preview (GitHub Pages)
 
-1. Push the files above to the `main` branch on `dr-sad/drop`.
+1. Push the files above to the `main` branch on `dr-sad/mike-drop`.
 2. On GitHub: **Settings → Pages**.
 3. Under **Build and deployment**, choose **Deploy from a branch**, branch **main**, folder **/ (root)**.
-4. After a minute, the site will be at:
+4. After a rename, open **Pages** once and confirm the source is still **main / (root)**; GitHub may need a minute to republish.
+5. The site URL uses the **repository name**. After renaming `drop` → `mike-drop`, use:
 
-   **https://dr-sad.github.io/drop/**
+   **https://dr-sad.github.io/mike-drop/**
+
+   Old links like `https://dr-sad.github.io/drop/` will no longer load the site.
 
 `index.html` redirects visitors to `MikeSIM_SNS.html`.
