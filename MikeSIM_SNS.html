@@ -1,0 +1,1084 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Fall Lab</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(180deg, #2d4a6e 0%, #1e3550 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 8px;
+}
+
+/* Embed shell: fits common iframe 850×540 */
+#app {
+  max-width: 850px;
+  max-height: 540px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #243a52;
+  border-radius: 16px;
+  border: 2px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+
+#top-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+
+#sim-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas#sim {
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.2);
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 680 / 520;
+  touch-action: none;
+  cursor: grab;
+  flex-shrink: 0;
+}
+canvas#sim.dragging { cursor: grabbing; }
+
+/* ── control columns ── */
+.ctrl {
+  width: 74px;
+  flex-shrink: 0;
+  background: rgba(20, 35, 55, 0.95);
+  border-radius: 12px;
+  padding: 8px 6px 6px;
+  border: 2px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ctrl-name {
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+.b1 .ctrl-name { color: #6ab0ff; }
+.b2 .ctrl-name { color: #ff9a5c; }
+
+.slider-group {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.slider-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+.slider-col .lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  text-align: center;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+.slider-col .num {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8f4ff;
+  text-align: center;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.vslider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  flex: 1;
+  min-height: 0;
+  width: 28px;
+  min-height: 44px;
+  cursor: pointer;
+  margin: 0;
+}
+.b1 .vslider { accent-color: #4a9eff; }
+.b2 .vslider { accent-color: #ff8c42; }
+
+/* ── buttons row ── */
+#btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+#btns button {
+  padding: 0 20px;
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+}
+#btns button:active:not(:disabled) { transform: scale(0.97); }
+#dropBtn {
+  background: linear-gradient(180deg, #3d8dff 0%, #2563d4 100%);
+  color: #fff;
+  box-shadow: 0 3px 0 #1a4a9e;
+}
+#dropBtn:hover:not(:disabled) { background: linear-gradient(180deg, #5aa0ff 0%, #3478e8 100%); }
+#dropBtn:disabled {
+  background: #3a4d63;
+  color: rgba(255,255,255,0.35);
+  box-shadow: none;
+  cursor: default;
+}
+#resetBtn {
+  background: #2a4d38;
+  color: #8ef5b0;
+  border: 2px solid #3d6b4f;
+}
+#resetBtn:hover { background: #345f45; }
+#objBtn {
+  background: #2a4558;
+  color: #7ee8f0;
+  border: 2px solid #3d6278;
+}
+#objBtn:hover { background: #355a70; }
+#objBtn.active { background: #3a5a70; border-color: #5a9eb8; }
+#airBtn {
+  background: #2a4538;
+  color: #9af0b8;
+  border: 2px solid #3d6b50;
+}
+#airBtn:hover { background: #355a48; }
+#airBtn.active { background: #3a5a48; border-color: #5a9e70; }
+
+/* ── air density panel ── */
+#airPanel {
+  display: none;
+  background: rgba(20, 35, 55, 0.98);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+}
+#airPanel.open { display: flex; }
+#airPanelHeader {
+  display: flex; align-items: center; gap: 8px;
+  justify-content: space-between; flex-wrap: wrap;
+}
+#airPanelTitle { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); }
+#rhoVal { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; color: #e8f4ff; }
+#airEarthBtn {
+  padding: 8px 14px; min-height: 40px; border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: #2a4550; color: #9af0c8; font-size: 12px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0;
+}
+#airEarthBtn:hover { background: #355a60; }
+#airSliderRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#rhoSlider { flex: 1; min-width: 120px; accent-color: #7ee8a8; cursor: pointer; height: 8px; }
+.air-lbl { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); white-space: nowrap; }
+
+/* ── object panel ── */
+#objectPanel {
+  display: none;
+  background: rgba(20, 35, 55, 0.98);
+  border: 2px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px 12px 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+#objectPanel.open { display: flex; }
+#objPanelHeader {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  justify-content: center;
+  font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7);
+}
+.obj-target {
+  padding: 8px 16px; min-height: 40px; border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: #2a4058; font-size: 13px; font-weight: 800; cursor: pointer;
+  transition: background 0.15s; letter-spacing: 0;
+}
+.obj-target.active { background: #3a5570; border-color: rgba(255,255,255,0.25); }
+#objGrid { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.obj-choice {
+  padding: 10px 14px; min-height: 44px; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: #2a4055; color: #e8f4ff; font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0; transition: background 0.15s;
+}
+.obj-choice:hover { background: #355a6a; }
+.obj-choice.selected { background: #3a6a9a; border-color: #6ab0ff; color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="app">
+<div id="top-row">
+  <div class="ctrl b1">
+    <div class="ctrl-name" id="ctrl-name-0">Bottle 1</div>
+    <div class="slider-group">
+      <div class="slider-col" id="wc-0">
+        <span class="lbl">Water<br>fill</span>
+        <input class="vslider" type="range" id="w1" min="0" max="100" step="10" value="50">
+        <span class="num" id="w1v">50%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="sim-wrap">
+    <canvas id="sim" width="680" height="520"></canvas>
+  </div>
+
+  <div class="ctrl b2">
+    <div class="ctrl-name" id="ctrl-name-1">Bottle 2</div>
+    <div class="slider-group">
+      <div class="slider-col" id="wc-1">
+        <span class="lbl">Water<br>fill</span>
+        <input class="vslider" type="range" id="w2" min="0" max="100" step="10" value="80">
+        <span class="num" id="w2v">80%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="btns">
+  <button type="button" id="dropBtn">Start drop</button>
+  <button type="button" id="resetBtn">Reset</button>
+  <button type="button" id="objBtn">Objects</button>
+  <button type="button" id="airBtn">Air</button>
+</div>
+
+<div id="objectPanel">
+  <div id="objPanelHeader">
+    <span>Replace:</span>
+    <button type="button" class="obj-target active" data-idx="0" style="color:#6ab0ff">Bottle 1</button>
+    <button type="button" class="obj-target" data-idx="1" style="color:#ff9a5c">Bottle 2</button>
+  </div>
+  <div id="objGrid">
+    <button type="button" class="obj-choice selected" data-type="bottle">Bottle</button>
+    <button type="button" class="obj-choice" data-type="bowling">Bowling ball</button>
+    <button type="button" class="obj-choice" data-type="chute_closed">Chute closed</button>
+    <button type="button" class="obj-choice" data-type="chute_open">Chute open</button>
+    <button type="button" class="obj-choice" data-type="balloon">Balloon</button>
+  </div>
+</div>
+
+<div id="airPanel">
+  <div id="airPanelHeader">
+    <span id="airPanelTitle">Air density</span>
+    <span id="rhoVal">1.225 kg/m³</span>
+    <button type="button" id="airEarthBtn">Earth</button>
+  </div>
+  <div id="airSliderRow">
+    <span class="air-lbl">Vacuum (0)</span>
+    <input type="range" id="rhoSlider" min="0" max="4" step="0.025" value="1.225">
+    <span class="air-lbl">Dense (4.0)</span>
+  </div>
+</div>
+</div>
+
+<script>
+const cv = document.getElementById('sim');
+const ctx = cv.getContext('2d');
+
+/* ── layout constants (internal canvas pixels) ── */
+const W = 680, H = 520, GY = 482;
+const PPM = 15;
+const MAX_H = 30, MIN_H = 1;
+const BW0 = 40, BH0 = 46, NW0 = 18, NH0 = 14, CW0 = 22, CH0 = 7;
+let BW = BW0, BH = BH0, NW = NW0, NH = NH0, CW = CW0, CH = CH0, TH = BH0 + NH0 + CH0;
+
+function updateBottleScale() {
+  const s = 0.45;
+  BW = Math.round(BW0 * s);
+  BH = Math.round(BH0 * s);
+  NW = Math.round(NW0 * s);
+  NH = Math.round(NH0 * s);
+  CW = Math.round(CW0 * s);
+  CH = Math.max(1, Math.round(CH0 * s));
+  TH = BH + NH + CH;
+}
+
+/* ─────────────────────────────────────────────
+   PHYSICS CONSTANTS
+   ───────────────────────────────────────────── */
+const g          = 9.8;
+const RHO_EARTH  = 1.225;
+let   RHO        = RHO_EARTH;
+const C_D        = 0.9;
+const DIAM       = 0.06;
+const A          = Math.PI * (DIAM / 2) ** 2;
+
+const MASS_EMPTY = 0.030;
+const MASS_WATER = 0.500;
+
+const SIM_DT = 1 / 480;
+
+const OBJECT_TYPES = {
+  bottle:       { name: 'Bottle',        fixedMass: null,  cdA: C_D * A },
+  bowling:      { name: 'Bowling Ball',  fixedMass: 6.35,  cdA: 0.47 * Math.PI * 0.108 ** 2 },
+  chute_closed: { name: 'Chute (Closed)',fixedMass: 0.020, cdA: 1.0  * 0.003 },
+  chute_open:   { name: 'Chute (Open)',  fixedMass: 0.020, cdA: 1.5  * 0.10  },
+  balloon:      { name: 'Balloon',       fixedMass: 0.012, cdA: 0.47 * Math.PI * 0.15 ** 2 },
+};
+
+const BOTTLES = [
+  {cx: 220, h: 3, water: 50, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
+   bottomY: 0, vy: 0, fallen: 0,
+   landed: false, landTime: null, sparks: [], shattered: false},
+  {cx: 460, h: 3, water: 80, color: '#e07030', cap: '#b04010', type: 'bottle',
+   bottomY: 0, vy: 0, fallen: 0,
+   landed: false, landTime: null, sparks: [], shattered: false}
+];
+
+let state = 'idle', t0 = null, elapsed = 0, raf = null, prevTs = null;
+let airPanelOpen = false;
+let selectedIdx = null;
+let dragIdx = null;
+
+function isSetupState() {
+  return state === 'idle' || state === 'done';
+}
+
+const AIR_DOT_MAX = 600;
+const airDots = Array.from({length: AIR_DOT_MAX}, () => ({
+  x:     Math.random() * W,
+  y:     Math.random() * GY,
+  r:     0.9 + Math.random() * 1.4,
+  speed: 0.25 + Math.random() * 0.9,
+  px:    Math.random() * Math.PI * 2,
+  py:    Math.random() * Math.PI * 2,
+  ax:    5 + Math.random() * 7,
+  ay:    4 + Math.random() * 6,
+}));
+
+function bottleMass(b) {
+  const ot = OBJECT_TYPES[b.type];
+  if (ot.fixedMass !== null) return ot.fixedMass;
+  return MASS_EMPTY + (b.water / 100) * MASS_WATER;
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function init() {
+  for (const b of BOTTLES) {
+    b.bottomY = GY - b.h * PPM;
+    b.vy      = 0;
+    b.fallen  = 0;
+    b.landed  = false;
+    b.landTime = null;
+    b.sparks  = [];
+    b.shattered = false;
+  }
+  elapsed = 0;
+}
+
+function clientToCanvas(ev) {
+  const r = cv.getBoundingClientRect();
+  const sx = W / r.width;
+  const sy = H / r.height;
+  return {
+    mx: (ev.clientX - r.left) * sx,
+    my: (ev.clientY - r.top) * sy,
+  };
+}
+
+function hitHalfWidth(b) {
+  switch (b.type) {
+    case 'bowling': return Math.max(22, BW * 0.72);
+    case 'chute_open': return Math.max(42, BW * 1.05);
+    case 'chute_closed': return Math.max(18, BW * 0.5);
+    case 'balloon': return Math.max(26, BW * 0.78);
+    default: return Math.max(26, BW * 0.52);
+  }
+}
+
+function hitTestBottle(mx, my) {
+  for (let i = 0; i < BOTTLES.length; i++) {
+    const b = BOTTLES[i];
+    const top = objTopY(b) - 6;
+    const bot = b.bottomY + 8;
+    const hw = hitHalfWidth(b) + 10;
+    if (mx >= b.cx - hw && mx <= b.cx + hw && my >= top && my <= bot) return i;
+  }
+  return -1;
+}
+
+function applyCanvasYToHeight(b, canvasY) {
+  const yMin = GY - MAX_H * PPM;
+  const yMax = GY;
+  let bottomY = Math.max(yMin, Math.min(yMax, canvasY));
+  let h = (GY - bottomY) / PPM;
+  h = Math.max(MIN_H, Math.min(MAX_H, Math.round(h * 2) / 2));
+  b.h = h;
+  b.bottomY = GY - b.h * PPM;
+}
+
+function drawBg() {
+  const skyTop = '#c5e8ff';
+  const skyBot = '#9dd0f5';
+  const grd = ctx.createLinearGradient(0, 0, 0, GY);
+  grd.addColorStop(0, skyTop);
+  grd.addColorStop(1, skyBot);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, GY);
+  ctx.strokeStyle = 'rgba(0,90,180,0.07)'; ctx.lineWidth = 1;
+  const gridStep = 5;
+  for (let m = gridStep; m <= 30; m += gridStep) {
+    const y = GY - m * PPM; if (y < 0) break;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.fillStyle = '#7a5c38';
+  ctx.fillRect(0, GY, W, H - GY);
+  ctx.fillStyle = '#a67c48';
+  ctx.fillRect(0, GY, W, 4);
+}
+
+function drawRuler() {
+  const tickStep = 5;
+  const maxM = 30;
+  ctx.textAlign = 'right';
+  for (let m = 0; m <= maxM; m += tickStep) {
+    const y = GY - m * PPM; if (y < 0) break;
+    ctx.strokeStyle = 'rgba(20,80,140,0.55)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(46, y); ctx.lineTo(57, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(15,65,120,0.85)'; ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText(m + ' m', 44, y + 4);
+  }
+  ctx.strokeStyle = 'rgba(15,55,130,0.2)'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(57, GY); ctx.lineTo(57, GY - maxM * PPM); ctx.stroke();
+}
+
+function drawShadow(b, baseR) {
+  const dist = Math.max(0, GY - b.bottomY);
+  const sp = 1 - Math.min(1, dist / Math.max(1, b.h * PPM));
+  ctx.save(); ctx.globalAlpha = .06 + .22 * sp; ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.ellipse(b.cx, GY + 2, baseR * (.5 + .7 * sp), 4, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.restore();
+}
+
+function drawBadge(b, topY) {
+  if (b.landTime === null) return;
+  const badgeY = b.shattered ? GY - 20 : topY - 10;
+  ctx.save(); ctx.fillStyle = 'rgba(255,252,235,0.98)'; ctx.strokeStyle = b.color; ctx.lineWidth = 2;
+  rr(b.cx - 34, badgeY - 16, 68, 24, 8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#3a2800'; ctx.font = 'bold 12px ui-monospace, monospace'; ctx.textAlign = 'center';
+  ctx.fillText(b.landTime.toFixed(2) + ' s', b.cx, badgeY + 1); ctx.restore();
+}
+
+function drawIdleLine(b) {
+  if (state !== 'idle') return;
+  ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = b.color + '55'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(64, b.bottomY); ctx.lineTo(W - 8, b.bottomY); ctx.stroke(); ctx.restore();
+}
+
+function objTopY(b) {
+  const by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  switch (b.type) {
+    case 'bowling':      return by - Math.max(6, BW * 1.4);
+    case 'chute_closed': return by - Math.max(2,Math.round(10*s)) - Math.max(4,Math.round(18*s)) - Math.max(2,Math.round(7*s))*2;
+    case 'chute_open': {
+      const legH = Math.max(2,Math.round(10*s)), bodyH = Math.max(4,Math.round(18*s));
+      const headR = Math.max(2,Math.round(7*s));
+      const lineLen = Math.max(6,Math.round(28*s)), domeR = Math.max(8,Math.round(38*s));
+      return by - legH - bodyH - headR*2 - lineLen - domeR*2;
+    }
+    case 'balloon': {
+      const ry = Math.max(8,Math.round(34*s)), knotH = Math.max(2,Math.round(5*s));
+      return by - knotH - ry*2;
+    }
+    default: return by - TH;
+  }
+}
+
+function drawSelectHighlight(b) {
+  const padT = 8, padB = 10, padX = 12;
+  const top = objTopY(b) - padT;
+  const bot = b.bottomY + padB;
+  const hw = hitHalfWidth(b) + padX;
+  const left = b.cx - hw;
+  const rw = hw * 2;
+  const rh = bot - top;
+  ctx.save();
+  ctx.shadowColor = b.color;
+  ctx.shadowBlur = 16;
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 3;
+  rr(left, top, rw, rh, 14);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = b.color;
+  ctx.lineWidth = 2;
+  rr(left + 2, top + 2, rw - 4, rh - 4, 12);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHeightReadout(b) {
+  const label = b.h.toFixed(1) + ' m up';
+  ctx.save();
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.strokeText(label, b.cx, b.bottomY + 22);
+  ctx.fillStyle = 'rgba(30,50,80,0.95)';
+  ctx.fillText(label, b.cx, b.bottomY + 22);
+  ctx.restore();
+}
+
+function drawBottleShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const bT = by - BH, nT = bT - NH, cT = nT - CH;
+  const wh = (b.water / 100) * (BH - 7);
+  if (wh > 0) {
+    ctx.save(); rr(cx - BW / 2 + 2, bT + 2, BW - 4, BH - 4, 5); ctx.clip();
+    ctx.fillStyle = b.color + '99';
+    ctx.fillRect(cx - BW / 2 + 2, by - 2 - wh, BW - 4, wh);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - BW / 2 + 5, by - 2 - wh); ctx.lineTo(cx + BW / 2 - 5, by - 2 - wh); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.lineWidth = 2; ctx.strokeStyle = b.color; ctx.fillStyle = 'rgba(210,235,255,0.14)';
+  rr(cx - BW / 2, bT, BW, BH, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(210,235,255,0.12)'; ctx.strokeStyle = b.color; ctx.lineWidth = 1.5;
+  ctx.fillRect(cx - NW / 2, nT, NW, NH); ctx.strokeRect(cx - NW / 2, nT, NW, NH);
+  ctx.fillStyle = b.cap; rr(cx - CW / 2, cT, CW, CH, 3); ctx.fill();
+  ctx.save(); rr(cx - BW / 2 + 1, bT + 1, BW - 2, BH - 2, 6); ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,0.2)'; rr(cx - BW / 2 + 4, bT + 6, 6, BH - 12, 3); ctx.fill(); ctx.restore();
+}
+
+function drawChuteClosedShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const headR = Math.max(2, Math.round(7 * s));
+  const bodyW = Math.max(3, Math.round(13 * s));
+  const bodyH = Math.max(4, Math.round(18 * s));
+  const legH  = Math.max(2, Math.round(10 * s));
+  const feetY = by, torsoB = feetY - legH, torsoT = torsoB - bodyH;
+  const headCY = torsoT - headR;
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = '#3a5020'; ctx.lineWidth = Math.max(1, 3 * s);
+  ctx.beginPath();
+  ctx.moveTo(cx - bodyW * 0.25, torsoB); ctx.lineTo(cx - bodyW * 0.2, feetY);
+  ctx.moveTo(cx + bodyW * 0.25, torsoB); ctx.lineTo(cx + bodyW * 0.2, feetY);
+  ctx.stroke();
+  ctx.fillStyle = '#4a6828'; ctx.strokeStyle = '#2a4010'; ctx.lineWidth = Math.max(0.5, s);
+  rr(cx - bodyW/2, torsoT, bodyW, bodyH, Math.max(1, 2*s)); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#8a7040';
+  rr(cx + bodyW/2 - 1, torsoT + bodyH*0.1, Math.max(2,Math.round(5*s)), Math.max(2,Math.round(10*s)), 1); ctx.fill();
+  ctx.strokeStyle = '#3a5020'; ctx.lineWidth = Math.max(1, 2.5 * s);
+  ctx.beginPath();
+  ctx.moveTo(cx - bodyW/2, torsoT + bodyH*0.25); ctx.lineTo(cx - bodyW * 0.9, torsoT + bodyH * 0.5);
+  ctx.moveTo(cx + bodyW/2, torsoT + bodyH*0.25); ctx.lineTo(cx + bodyW * 0.9, torsoT + bodyH * 0.5);
+  ctx.stroke();
+  ctx.fillStyle = '#d49060';
+  ctx.beginPath(); ctx.arc(cx, headCY, headR, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a6828'; ctx.strokeStyle = '#2a4010'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.ellipse(cx, headCY - headR*0.1, headR*1.1, headR*0.75, 0, -Math.PI, 0); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawChuteOpenShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const headR = Math.max(2, Math.round(7 * s));
+  const bodyW = Math.max(3, Math.round(13 * s));
+  const bodyH = Math.max(4, Math.round(18 * s));
+  const legH  = Math.max(2, Math.round(10 * s));
+  const lineLen = Math.max(6, Math.round(28 * s));
+  const domeR   = Math.max(8, Math.round(38 * s));
+  const feetY = by, torsoB = feetY - legH, torsoT = torsoB - bodyH;
+  const headCY = torsoT - headR, headTop = headCY - headR;
+  const domeY  = headTop - lineLen - domeR;
+  ctx.save();
+  const panels = 6;
+  for (let i = 0; i < panels; i++) {
+    const a1 = Math.PI + (i / panels) * Math.PI;
+    const a2 = Math.PI + ((i + 1) / panels) * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, domeY); ctx.arc(cx, domeY, domeR, a1, a2); ctx.closePath();
+    ctx.fillStyle = '#f0f0f0'; ctx.fill();
+  }
+  ctx.strokeStyle = '#888'; ctx.lineWidth = Math.max(0.5, 0.8 * s);
+  ctx.beginPath(); ctx.arc(cx, domeY, domeR, Math.PI, 2 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = Math.max(0.3, 0.5 * s);
+  const shoulderY = torsoT + bodyH * 0.15;
+  for (let i = 0; i < 4; i++) {
+    const lx = cx + (i / 3 * 0.8 - 0.4) * 2 * domeR;
+    ctx.beginPath(); ctx.moveTo(lx, domeY); ctx.lineTo(cx + (i < 2 ? -bodyW*0.4 : bodyW*0.4), shoulderY); ctx.stroke();
+  }
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#3a5020'; ctx.lineWidth = Math.max(1, 3 * s);
+  ctx.beginPath();
+  ctx.moveTo(cx - bodyW*0.25, torsoB); ctx.lineTo(cx - bodyW*0.2, feetY);
+  ctx.moveTo(cx + bodyW*0.25, torsoB); ctx.lineTo(cx + bodyW*0.2, feetY);
+  ctx.stroke();
+  ctx.fillStyle = '#4a6828'; ctx.strokeStyle = '#2a4010'; ctx.lineWidth = Math.max(0.5, s);
+  rr(cx - bodyW/2, torsoT, bodyW, bodyH, Math.max(1, 2*s)); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#3a5020'; ctx.lineWidth = Math.max(1, 2.5 * s);
+  ctx.beginPath();
+  ctx.moveTo(cx - bodyW/2, torsoT + bodyH*0.2); ctx.lineTo(cx - bodyW*0.9, torsoT - bodyH*0.1);
+  ctx.moveTo(cx + bodyW/2, torsoT + bodyH*0.2); ctx.lineTo(cx + bodyW*0.9, torsoT - bodyH*0.1);
+  ctx.stroke();
+  ctx.fillStyle = '#d49060';
+  ctx.beginPath(); ctx.arc(cx, headCY, headR, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a6828'; ctx.strokeStyle = '#2a4010'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.ellipse(cx, headCY - headR*0.1, headR*1.1, headR*0.75, 0, -Math.PI, 0); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawBalloonShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const s = Math.max(0.5, BW / 40);
+  const rx = Math.max(6, Math.round(26 * s));
+  const ry = Math.max(8, Math.round(34 * s));
+  const knotH = Math.max(2, Math.round(5 * s));
+  const centerY = by - knotH - ry;
+  ctx.save();
+  const grd = ctx.createRadialGradient(cx - rx*0.3, centerY - ry*0.3, rx*0.08, cx, centerY, Math.max(rx, ry));
+  grd.addColorStop(0, 'rgba(255,255,255,0.55)');
+  grd.addColorStop(0.35, b.color + 'dd');
+  grd.addColorStop(1, b.color + '88');
+  ctx.beginPath(); ctx.ellipse(cx, centerY, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fillStyle = grd; ctx.fill();
+  ctx.strokeStyle = b.color; ctx.lineWidth = Math.max(0.5, 1.5 * s); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath(); ctx.ellipse(cx - rx*0.28, centerY - ry*0.28, rx*0.22, ry*0.18, -0.4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = b.color;
+  ctx.beginPath();
+  ctx.moveTo(cx - Math.max(2,Math.round(4*s)), by - knotH);
+  ctx.lineTo(cx + Math.max(2,Math.round(4*s)), by - knotH);
+  ctx.lineTo(cx, by); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,140,140,0.6)'; ctx.lineWidth = Math.max(0.3, 0.6*s);
+  ctx.beginPath(); ctx.moveTo(cx, by); ctx.lineTo(cx + Math.max(2,Math.round(3*s)), by + Math.max(4,Math.round(8*s))); ctx.stroke();
+  ctx.restore();
+}
+
+function drawBowlingShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const r = Math.max(5, BW * 0.7);
+  const cy = by - r;
+  ctx.save();
+  const grd = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.05, cx, cy, r);
+  grd.addColorStop(0, '#5a5888'); grd.addColorStop(1, '#1a1830');
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = grd; ctx.fill();
+  ctx.strokeStyle = b.color; ctx.lineWidth = 1.5; ctx.stroke();
+  const hr = Math.max(1, r * 0.15); ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  for (const [hx, hy] of [[cx - r*0.22, cy - r*0.18],[cx + r*0.18, cy - r*0.30],[cx + r*0.22, cy + r*0.12]]) {
+    ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFeatherShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const fw = Math.max(3, BW * 0.32);
+  const fh = Math.max(8, BH * 1.8);
+  ctx.save();
+  ctx.fillStyle = 'rgba(240,238,215,0.88)';
+  ctx.beginPath(); ctx.ellipse(cx, by - fh * 0.52, fw, fh * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,188,140,0.5)'; ctx.lineWidth = 0.6; ctx.stroke();
+  ctx.strokeStyle = '#c8b870'; ctx.lineWidth = Math.max(0.5, fw * 0.18);
+  ctx.beginPath(); ctx.moveTo(cx, by); ctx.lineTo(cx, by - fh); ctx.stroke();
+  ctx.restore();
+}
+
+function drawBrickShape(b) {
+  const cx = b.cx, by = b.bottomY;
+  const bw = Math.max(8, BW * 1.2);
+  const bh = Math.max(4, BH * 0.55);
+  const x = cx - bw / 2, y = by - bh;
+  ctx.save();
+  ctx.fillStyle = '#b04030'; rr(x, y, bw, bh, 2); ctx.fill();
+  ctx.strokeStyle = '#7a2018'; ctx.lineWidth = 1; rr(x, y, bw, bh, 2); ctx.stroke();
+  ctx.strokeStyle = '#d06050'; ctx.lineWidth = Math.max(0.5, bh * 0.1);
+  ctx.beginPath(); ctx.moveTo(x + 2, y + bh * 0.5); ctx.lineTo(x + bw - 2, y + bh * 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + bw * 0.1, y + 2); ctx.lineTo(cx + bw * 0.1, y + bh * 0.48); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - bw * 0.2, y + bh * 0.52); ctx.lineTo(cx - bw * 0.2, y + bh - 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawAirDensity() {
+  if (!airPanelOpen) return;
+  const frac   = Math.min(1, RHO / 4.0);
+  const count  = Math.round(frac * AIR_DOT_MAX);
+  const t      = performance.now() * 0.001;
+
+  ctx.save();
+
+  ctx.fillStyle = `rgba(140,175,215,${frac * 0.13})`;
+  ctx.fillRect(0, 0, W, GY);
+
+  ctx.fillStyle = `rgba(80,120,175,${0.18 + frac * 0.28})`;
+  for (let i = 0; i < count; i++) {
+    const d = airDots[i];
+    const x = (d.x + Math.sin(t * d.speed + d.px) * d.ax + W) % W;
+    const y = (d.y + Math.cos(t * d.speed * 0.75 + d.py) * d.ay + GY) % GY;
+    ctx.beginPath(); ctx.arc(x, y, d.r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.font = 'bold 12px ui-monospace, monospace';
+  ctx.textAlign = 'right';
+  const label = `\u03c1 = ${RHO.toFixed(3)} kg/m\u00b3`;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillText(label, W - 9, 19);
+  ctx.fillStyle = RHO < 0.01 ? '#f08060' : '#d0eeff';
+  ctx.fillText(label, W - 10, 18);
+  if (RHO < 0.01) {
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#f08060';
+    ctx.fillText('VACUUM', W - 10, 33);
+  }
+
+  ctx.restore();
+}
+
+function drawObject(b) {
+  if (b.shattered) { drawBadge(b, 0); return; }
+
+  const shadowR = b.type === 'bowling'    ? Math.max(5, BW * 0.7)
+                : b.type === 'chute_open' ? Math.max(8, BW * 0.95)
+                : b.type === 'balloon'   ? Math.max(6, BW * 0.65)
+                : BW * 0.5;
+  drawShadow(b, shadowR);
+
+  switch (b.type) {
+    case 'chute_closed': drawChuteClosedShape(b); break;
+    case 'chute_open':   drawChuteOpenShape(b);   break;
+    case 'balloon':      drawBalloonShape(b);     break;
+    case 'bowling':      drawBowlingShape(b);     break;
+    default:             drawBottleShape(b);      break;
+  }
+
+  if (b.landed) drawBadge(b, objTopY(b));
+  drawIdleLine(b);
+}
+
+function drawSparks(b) {
+  for (const p of b.sparks) {
+    ctx.save(); ctx.globalAlpha = Math.max(0, p.life);
+    if (p.type === 'frag') {
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.color; ctx.strokeStyle = p.edge; ctx.lineWidth = 1;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    } else if (p.type === 'drop') {
+      ctx.fillStyle = b.color + 'cc';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#a08060';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function spawnSparks(b) {
+  const isMax = b.type === 'bottle' && b.h === 30 && b.water === 100;
+  if (isMax) {
+    b.shattered = true;
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI * (.04 + Math.random() * .92);
+      const s = 100 + Math.random() * 280;
+      b.sparks.push({type: 'frag', x: b.cx + (Math.random() - .5) * BW, y: GY - BH * .5,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - .5) * 14,
+        w: 4 + Math.random() * 14, h: 3 + Math.random() * 8,
+        color: b.color, edge: b.cap, life: 1.1 + Math.random() * .4});
+    }
+    for (let i = 0; i < 28; i++) {
+      const a = -Math.PI * (.06 + Math.random() * .88);
+      const s = 80 + Math.random() * 320;
+      b.sparks.push({type: 'drop', x: b.cx + (Math.random() - .5) * BW * .7, y: GY - 4,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 2 + Math.random() * 4, life: .7 + Math.random() * .6});
+    }
+  } else {
+    const n = 4 + Math.round(b.h * .6);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI * (.12 + Math.random() * .76);
+      const s = 25 + Math.random() * 55;
+      b.sparks.push({type: 'dust', x: b.cx + (Math.random() - .5) * BW * .9, y: GY - 2,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 1.5 + Math.random() * 2, life: .4 + Math.random() * .3});
+    }
+  }
+}
+
+function tickSparks(b, dt) {
+  for (const p of b.sparks) {
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 920 * dt;
+    if (p.type === 'frag') p.rot += p.rotSpd * dt;
+    p.life -= dt * (p.type === 'dust' ? 3.5 : 2);
+  }
+  b.sparks = b.sparks.filter(p => p.life > 0 && p.y < GY + 30);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H); drawBg(); drawRuler(); drawAirDensity();
+  BOTTLES.forEach((b, i) => {
+    drawObject(b);
+    if (isSetupState() && selectedIdx === i) {
+      drawSelectHighlight(b);
+      drawHeightReadout(b);
+    }
+    drawSparks(b);
+  });
+}
+
+function physicsStep(b, dt) {
+  const m    = bottleMass(b);
+  const drag = 0.5 * RHO * OBJECT_TYPES[b.type].cdA * b.vy * b.vy;
+  const a    = g - drag / m;
+  b.vy    += a * dt;
+  b.fallen += b.vy * dt;
+}
+
+function animate(ts) {
+  if (!t0) t0 = ts;
+  elapsed = (ts - t0) / 1000;
+  const frameDt = prevTs ? Math.min(.05, (ts - prevTs) / 1000) : 1 / 60;
+  prevTs = ts;
+
+  let allLanded = true;
+  for (const b of BOTTLES) {
+    if (state === 'falling' && !b.landed) {
+      allLanded = false;
+
+      let remaining = frameDt;
+      while (remaining > 0) {
+        const step = Math.min(remaining, SIM_DT);
+        physicsStep(b, step);
+        remaining -= step;
+      }
+
+      const ny = GY - (b.h - b.fallen) * PPM;
+      if (ny >= GY) {
+        b.bottomY  = GY;
+        b.landed   = true;
+        b.landTime = elapsed;
+        spawnSparks(b);
+      } else {
+        b.bottomY = ny;
+      }
+    }
+    tickSparks(b, frameDt);
+  }
+
+  draw();
+
+  if (allLanded && state === 'falling') {
+    state = 'done';
+    document.getElementById('dropBtn').disabled = false;
+  }
+  if ((state === 'falling' && !allLanded) || BOTTLES.some(b => b.sparks.length > 0) || airPanelOpen) {
+    raf = requestAnimationFrame(animate);
+  } else {
+    raf = null;
+  }
+}
+
+function startAnimIfNeeded() {
+  if (airPanelOpen && !raf) raf = requestAnimationFrame(animate);
+}
+
+function wire(sid, did, prop, idx, fmt) {
+  document.getElementById(sid).addEventListener('input', function () {
+    const v = parseFloat(this.value);
+    BOTTLES[idx][prop] = v;
+    document.getElementById(did).textContent = fmt(v);
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    state = 'idle';
+    document.getElementById('dropBtn').disabled = false;
+    init(); draw(); startAnimIfNeeded();
+  });
+}
+wire('w1', 'w1v', 'water', 0, v => v + '%');
+wire('w2', 'w2v', 'water', 1, v => v + '%');
+
+function stopDragPointer(e) {
+  if (dragIdx === null) return;
+  if (typeof cv.hasPointerCapture === 'function' && cv.hasPointerCapture(e.pointerId)) {
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+  }
+  dragIdx = null;
+  cv.classList.remove('dragging');
+}
+
+cv.addEventListener('pointerdown', (e) => {
+  if (!isSetupState()) return;
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+  const { mx, my } = clientToCanvas(e);
+  const hit = hitTestBottle(mx, my);
+  if (hit >= 0) {
+    if (state === 'done') state = 'idle';
+    selectedIdx = hit;
+    dragIdx = hit;
+    cv.setPointerCapture(e.pointerId);
+    cv.classList.add('dragging');
+    applyCanvasYToHeight(BOTTLES[hit], my);
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    state = 'idle';
+    document.getElementById('dropBtn').disabled = false;
+    init(); draw(); startAnimIfNeeded();
+    e.preventDefault();
+  } else {
+    selectedIdx = null;
+    draw();
+    startAnimIfNeeded();
+  }
+});
+
+cv.addEventListener('pointermove', (e) => {
+  if (dragIdx === null) return;
+  if (state === 'done') state = 'idle';
+  const { mx, my } = clientToCanvas(e);
+  applyCanvasYToHeight(BOTTLES[dragIdx], my);
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+  state = 'idle';
+  document.getElementById('dropBtn').disabled = false;
+  init(); draw(); startAnimIfNeeded();
+  e.preventDefault();
+});
+
+cv.addEventListener('pointerup', (e) => { stopDragPointer(e); draw(); startAnimIfNeeded(); });
+cv.addEventListener('pointercancel', (e) => { stopDragPointer(e); draw(); startAnimIfNeeded(); });
+
+document.getElementById('dropBtn').addEventListener('click', () => {
+  if (state === 'falling') return;
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+  state = 'falling'; t0 = null; prevTs = null;
+  document.getElementById('dropBtn').disabled = true;
+  init(); raf = requestAnimationFrame(animate);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+  state = 'idle'; document.getElementById('dropBtn').disabled = false;
+  init(); draw(); startAnimIfNeeded();
+});
+
+let objPanelTarget = 0;
+
+function updateWaterSlider(idx) {
+  document.getElementById('wc-' + idx).style.display =
+    BOTTLES[idx].type === 'bottle' ? '' : 'none';
+}
+
+function syncObjPanel() {
+  document.querySelectorAll('.obj-target').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.idx) === objPanelTarget);
+  });
+  const cur = BOTTLES[objPanelTarget].type;
+  document.querySelectorAll('.obj-choice').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.type === cur);
+  });
+}
+
+document.getElementById('objBtn').addEventListener('click', () => {
+  const panel = document.getElementById('objectPanel');
+  panel.classList.toggle('open');
+  document.getElementById('objBtn').classList.toggle('active', panel.classList.contains('open'));
+  syncObjPanel();
+});
+
+document.querySelectorAll('.obj-target').forEach(btn => {
+  btn.addEventListener('click', () => {
+    objPanelTarget = parseInt(btn.dataset.idx);
+    syncObjPanel();
+  });
+});
+
+document.querySelectorAll('.obj-choice').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const type = btn.dataset.type;
+    BOTTLES[objPanelTarget].type = type;
+    const info = OBJECT_TYPES[type];
+    document.getElementById('ctrl-name-' + objPanelTarget).textContent = info.name;
+    updateWaterSlider(objPanelTarget);
+    syncObjPanel();
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    state = 'idle';
+    document.getElementById('dropBtn').disabled = false;
+    init(); draw(); startAnimIfNeeded();
+  });
+});
+
+function setRho(val) {
+  RHO = val;
+  document.getElementById('rhoSlider').value = val;
+  document.getElementById('rhoVal').textContent = val.toFixed(3) + ' kg/m³';
+}
+
+document.getElementById('airBtn').addEventListener('click', () => {
+  airPanelOpen = !airPanelOpen;
+  document.getElementById('airPanel').classList.toggle('open', airPanelOpen);
+  document.getElementById('airBtn').classList.toggle('active', airPanelOpen);
+  startAnimIfNeeded();
+  if (!airPanelOpen) draw();
+});
+
+document.getElementById('rhoSlider').addEventListener('input', function () {
+  setRho(parseFloat(this.value));
+});
+
+document.getElementById('airEarthBtn').addEventListener('click', () => {
+  setRho(RHO_EARTH);
+});
+
+updateBottleScale(); init(); draw();
+</script>
+</body>
+</html>
