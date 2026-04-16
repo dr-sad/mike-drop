@@ -27,7 +27,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 0;
   padding: 8px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -37,20 +37,37 @@ body {
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
 
-#top-row {
+/* Stage: top row + overlapped drop control */
+#main-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
+}
+
+#top-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 170px;
+  /* Bottom band: side panels extend here; Drop overlaps center above this band */
+  grid-template-rows: minmax(0, 1fr) 32px;
   gap: 6px;
-  align-items: stretch;
   flex: 1;
   min-height: 0;
 }
 
 #sim-wrap {
-  flex: 1;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  position: relative;
   min-width: 0;
+  min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  /* Bottom grid row + row gap: keeps canvas seam aligned; Drop (#btns) sits in this inset */
+  padding-bottom: calc(32px + 6px);
 }
 
 canvas#sim {
@@ -67,83 +84,20 @@ canvas#sim {
 }
 canvas#sim.dragging { cursor: grabbing; }
 
-/* ── control columns ── */
-.ctrl {
-  width: 74px;
-  flex-shrink: 0;
-  background: rgba(20, 35, 55, 0.95);
-  border-radius: 12px;
-  padding: 8px 6px 6px;
-  border: 2px solid rgba(255,255,255,0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.ctrl-name {
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 4px;
-  text-align: center;
-  line-height: 1.2;
-}
-.b1 .ctrl-name { color: #6ab0ff; }
-.b2 .ctrl-name { color: #ff9a5c; }
-
-.slider-group {
-  display: flex;
-  gap: 2px;
-  justify-content: center;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-}
-.slider-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-height: 0;
-}
-.slider-col .lbl {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.65);
-  text-align: center;
-  margin-bottom: 2px;
-  line-height: 1.2;
-}
-.slider-col .num {
-  font-family: ui-monospace, "Cascadia Code", monospace;
-  font-size: 12px;
-  font-weight: 700;
-  color: #e8f4ff;
-  text-align: center;
-  margin-top: 2px;
-  white-space: nowrap;
-}
-
-.vslider {
-  writing-mode: vertical-lr;
-  direction: rtl;
-  flex: 1;
-  min-height: 0;
-  width: 28px;
-  min-height: 44px;
-  cursor: pointer;
-  margin: 0;
-}
-.b1 .vslider { accent-color: #4a9eff; }
-.b2 .vslider { accent-color: #ff8c42; }
-
-/* ── buttons row ── */
+/* ── Drop control: anchored to center column, inset from canvas column right edge ── */
 #btns {
+  position: absolute;
+  right: 5%;
+  bottom: 1px;
+  z-index: 20;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
+  gap: 0;
+  justify-content: flex-end;
   align-items: center;
+  pointer-events: none;
 }
 #btns button {
+  pointer-events: auto;
   padding: 0 20px;
   min-height: 44px;
   border: none;
@@ -156,42 +110,33 @@ canvas#sim.dragging { cursor: grabbing; }
   transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
 }
 #btns button:active:not(:disabled) { transform: scale(0.97); }
-#dropBtn {
+/* Two IDs beat `#btns button` so min-height/border-radius aren’t forced to 44px / 10px — true circle */
+#btns #dropBtn {
+  width: 86px;
+  min-width: 86px;
+  height: 86px;
+  min-height: 86px;
+  max-height: 86px;
+  padding: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
   background: linear-gradient(180deg, #3d8dff 0%, #2563d4 100%);
   color: #fff;
   box-shadow: 0 3px 0 #1a4a9e;
 }
-#dropBtn:hover:not(:disabled) { background: linear-gradient(180deg, #5aa0ff 0%, #3478e8 100%); }
-#dropBtn:disabled {
+#btns #dropBtn:hover:not(:disabled) { background: linear-gradient(180deg, #5aa0ff 0%, #3478e8 100%); }
+#btns #dropBtn:disabled {
   background: #3a4d63;
   color: rgba(255,255,255,0.35);
   box-shadow: none;
   cursor: default;
 }
-#resetBtn {
-  background: #2a4d38;
-  color: #8ef5b0;
-  border: 2px solid #3d6b4f;
-}
-#resetBtn:hover { background: #345f45; }
-#objBtn {
-  background: #2a4558;
-  color: #7ee8f0;
-  border: 2px solid #3d6278;
-}
-#objBtn:hover { background: #355a70; }
-#objBtn.active { background: #3a5a70; border-color: #5a9eb8; }
-#airBtn {
-  background: #2a4538;
-  color: #9af0b8;
-  border: 2px solid #3d6b50;
-}
-#airBtn:hover { background: #355a48; }
-#airBtn.active { background: #3a5a48; border-color: #5a9e70; }
-
 /* ── air density panel ── */
 #airPanel {
-  display: none;
+  grid-column: 3;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  display: flex;
   background: rgba(20, 35, 55, 0.98);
   border: 2px solid rgba(255,255,255,0.12);
   border-radius: 12px;
@@ -199,10 +144,9 @@ canvas#sim.dragging { cursor: grabbing; }
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  width: 100%;
-  max-width: 100%;
+  width: 170px;
+  flex-shrink: 0;
 }
-#airPanel.open { display: flex; }
 #airPanelHeader {
   display: flex; align-items: center; gap: 8px;
   justify-content: space-between; flex-wrap: wrap;
@@ -222,111 +166,107 @@ canvas#sim.dragging { cursor: grabbing; }
 
 /* ── object panel ── */
 #objectPanel {
-  display: none;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  display: flex;
   background: rgba(20, 35, 55, 0.98);
   border: 2px solid rgba(255,255,255,0.12);
   border-radius: 12px;
-  padding: 10px 12px 12px;
+  padding: 10px 8px 12px;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
-  width: 100%;
-  max-width: 100%;
+  width: 120px;
+  flex-shrink: 0;
 }
-#objectPanel.open { display: flex; }
-#objPanelHeader {
-  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-  justify-content: center;
-  font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7);
+#objectPanelTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.72);
+  text-align: center;
 }
-.obj-target {
-  padding: 8px 16px; min-height: 40px; border-radius: 8px;
-  border: 2px solid rgba(255,255,255,0.12);
-  background: #2a4058; font-size: 13px; font-weight: 800; cursor: pointer;
-  transition: background 0.15s; letter-spacing: 0;
+#objGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
-.obj-target.active { background: #3a5570; border-color: rgba(255,255,255,0.25); }
-#objGrid { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .obj-choice {
-  padding: 10px 14px; min-height: 44px; border-radius: 10px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.1);
-  background: #2a4055; color: #e8f4ff; font-size: 13px; font-weight: 700;
-  cursor: pointer; letter-spacing: 0; transition: background 0.15s;
+  padding: 2px;
+  background: #2a4055;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: background 0.15s;
 }
 .obj-choice:hover { background: #355a6a; }
 .obj-choice.selected { background: #3a6a9a; border-color: #6ab0ff; color: #fff; }
+.obj-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 8px;
+}
 </style>
 </head>
 <body>
 
 <div id="app">
+<div id="main-stage">
 <div id="top-row">
-  <div class="ctrl b1">
-    <div class="ctrl-name" id="ctrl-name-0">Bottle 1</div>
-    <div class="slider-group">
-      <div class="slider-col" id="wc-0">
-        <span class="lbl">Water<br>fill</span>
-        <input class="vslider" type="range" id="w1" min="0" max="100" step="10" value="50">
-        <span class="num" id="w1v">50%</span>
-      </div>
+  <div id="objectPanel">
+    <div id="objectPanelTitle">Objects</div>
+    <div id="objGrid">
+      <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="Bottle (full)" aria-label="Bottle full"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice" data-type="bottle" data-water="25" title="Bottle (25%)" aria-label="Bottle twenty five percent"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice" data-type="bowling" title="Bowling ball" aria-label="Bowling ball"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice" data-type="chute_closed" title="Parachute closed" aria-label="Parachute closed"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice" data-type="chute_open" title="Parachute open" aria-label="Parachute open"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
+      <button type="button" class="obj-choice" data-type="balloon" title="Balloon" aria-label="Balloon"><canvas class="obj-thumb" width="72" height="72" aria-hidden="true"></canvas></button>
     </div>
   </div>
 
   <div id="sim-wrap">
     <canvas id="sim" width="680" height="520"></canvas>
+    <div id="btns">
+      <button type="button" id="dropBtn">Drop</button>
+    </div>
   </div>
 
-  <div class="ctrl b2">
-    <div class="ctrl-name" id="ctrl-name-1">Bottle 2</div>
-    <div class="slider-group">
-      <div class="slider-col" id="wc-1">
-        <span class="lbl">Water<br>fill</span>
-        <input class="vslider" type="range" id="w2" min="0" max="100" step="10" value="80">
-        <span class="num" id="w2v">80%</span>
-      </div>
+  <div id="airPanel">
+    <div id="airPanelHeader">
+      <span id="airPanelTitle">Air density</span>
+      <span id="rhoVal">1.225 kg/m³</span>
+      <button type="button" id="airEarthBtn">Earth</button>
+    </div>
+    <div id="airSliderRow">
+      <span class="air-lbl">Vacuum (0)</span>
+      <input type="range" id="rhoSlider" min="0" max="4" step="0.025" value="1.225">
+      <span class="air-lbl">Dense (4.0)</span>
     </div>
   </div>
 </div>
-
-<div id="btns">
-  <button type="button" id="dropBtn">Start drop</button>
-  <button type="button" id="resetBtn">Reset</button>
-  <button type="button" id="objBtn">Objects</button>
-  <button type="button" id="airBtn">Air</button>
-</div>
-
-<div id="objectPanel">
-  <div id="objPanelHeader">
-    <span>Replace:</span>
-    <button type="button" class="obj-target active" data-idx="0" style="color:#6ab0ff">Bottle 1</button>
-    <button type="button" class="obj-target" data-idx="1" style="color:#ff9a5c">Bottle 2</button>
-  </div>
-  <div id="objGrid">
-    <button type="button" class="obj-choice selected" data-type="bottle">Bottle</button>
-    <button type="button" class="obj-choice" data-type="bowling">Bowling ball</button>
-    <button type="button" class="obj-choice" data-type="chute_closed">Chute closed</button>
-    <button type="button" class="obj-choice" data-type="chute_open">Chute open</button>
-    <button type="button" class="obj-choice" data-type="balloon">Balloon</button>
-  </div>
-</div>
-
-<div id="airPanel">
-  <div id="airPanelHeader">
-    <span id="airPanelTitle">Air density</span>
-    <span id="rhoVal">1.225 kg/m³</span>
-    <button type="button" id="airEarthBtn">Earth</button>
-  </div>
-  <div id="airSliderRow">
-    <span class="air-lbl">Vacuum (0)</span>
-    <input type="range" id="rhoSlider" min="0" max="4" step="0.025" value="1.225">
-    <span class="air-lbl">Dense (4.0)</span>
-  </div>
 </div>
 </div>
 
 <script>
 const cv = document.getElementById('sim');
-const ctx = cv.getContext('2d');
+let ctx = cv.getContext('2d');
+
+function runWithContext(c, fn) {
+  const prev = ctx;
+  ctx = c;
+  try { fn(); } finally { ctx = prev; }
+}
 
 /* ── layout constants (internal canvas pixels) ── */
 const W = 680, H = 520, GY = 482;
@@ -370,18 +310,31 @@ const OBJECT_TYPES = {
 };
 
 const BOTTLES = [
-  {cx: 220, h: 3, water: 50, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
+  {cx: 220, h: 3, water: 100, color: '#4a90f0', cap: '#1a60c0', type: 'bottle',
    bottomY: 0, vy: 0, fallen: 0,
    landed: false, landTime: null, sparks: [], shattered: false},
-  {cx: 460, h: 3, water: 80, color: '#e07030', cap: '#b04010', type: 'bottle',
+  {cx: 460, h: 3, water: 25, color: '#e07030', cap: '#b04010', type: 'bottle',
    bottomY: 0, vy: 0, fallen: 0,
    landed: false, landTime: null, sparks: [], shattered: false}
 ];
 
 let state = 'idle', t0 = null, elapsed = 0, raf = null, prevTs = null;
-let airPanelOpen = false;
 let selectedIdx = null;
 let dragIdx = null;
+const dropBtn = document.getElementById('dropBtn');
+
+function syncActionButton() {
+  if (state === 'falling') {
+    dropBtn.textContent = 'Drop';
+    dropBtn.disabled = true;
+  } else if (state === 'done') {
+    dropBtn.textContent = 'Reset';
+    dropBtn.disabled = false;
+  } else {
+    dropBtn.textContent = 'Drop';
+    dropBtn.disabled = false;
+  }
+}
 
 function isSetupState() {
   return state === 'idle' || state === 'done';
@@ -754,7 +707,6 @@ function drawBrickShape(b) {
 }
 
 function drawAirDensity() {
-  if (!airPanelOpen) return;
   const frac   = Math.min(1, RHO / 4.0);
   const count  = Math.round(frac * AIR_DOT_MAX);
   const t      = performance.now() * 0.001;
@@ -807,6 +759,86 @@ function drawObject(b) {
 
   if (b.landed) drawBadge(b, objTopY(b));
   drawIdleLine(b);
+}
+
+function objectThumbLayoutScale(type) {
+  switch (type) {
+    case 'chute_open': return 0.30;
+    case 'chute_closed': return 0.38;
+    case 'balloon': return 0.42;
+    case 'bowling': return 0.52;
+    default: return 0.55;
+  }
+}
+
+function drawObjectThumbShape(b) {
+  switch (b.type) {
+    case 'chute_closed': drawChuteClosedShape(b); break;
+    case 'chute_open':   drawChuteOpenShape(b);   break;
+    case 'balloon':      drawBalloonShape(b);     break;
+    case 'bowling':      drawBowlingShape(b);     break;
+    default:             drawBottleShape(b);      break;
+  }
+}
+
+function refreshObjectChoiceThumbs() {
+  document.querySelectorAll('.obj-choice canvas.obj-thumb').forEach((canvas) => {
+    const btn = canvas.closest('button');
+    if (!btn) return;
+    const type = btn.dataset.type;
+    const preset = parseFloat(btn.dataset.water);
+    const water = type === 'bottle' && Number.isFinite(preset) ? preset : BOTTLES[0].water;
+    const pseudo = {
+      type,
+      water,
+      color: BOTTLES[0].color,
+      cap: BOTTLES[0].cap,
+      cx: 0,
+      bottomY: 0,
+      shattered: false,
+      landed: false,
+    };
+    if (type === 'balloon') {
+      pseudo.color = BOTTLES[1].color;
+      pseudo.cap = BOTTLES[1].cap;
+    }
+    if (type === 'bowling') {
+      pseudo.color = BOTTLES[0].color;
+    }
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    const cssW = Math.max(28, Math.round(rect.width));
+    const cssH = Math.max(28, Math.round(rect.height));
+    const pw = Math.max(1, Math.round(cssW * dpr));
+    const ph = Math.max(1, Math.round(cssH * dpr));
+    if (canvas.width !== pw || canvas.height !== ph) {
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+
+    const c = canvas.getContext('2d');
+    runWithContext(c, () => {
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, pw, ph);
+      c.scale(dpr, dpr);
+      c.fillStyle = 'rgba(255,255,255,0.08)';
+      c.fillRect(0, 0, cssW, cssH);
+
+      const cx = cssW / 2;
+      const bottomY = cssH - 3;
+      const sc = objectThumbLayoutScale(type);
+      pseudo.cx = cx;
+      pseudo.bottomY = bottomY;
+
+      c.save();
+      c.translate(cx, bottomY);
+      c.scale(sc, sc);
+      c.translate(-cx, -bottomY);
+      drawObjectThumbShape(pseudo);
+      c.restore();
+    });
+  });
 }
 
 function drawSparks(b) {
@@ -922,9 +954,9 @@ function animate(ts) {
 
   if (allLanded && state === 'falling') {
     state = 'done';
-    document.getElementById('dropBtn').disabled = false;
+    syncActionButton();
   }
-  if ((state === 'falling' && !allLanded) || BOTTLES.some(b => b.sparks.length > 0) || airPanelOpen) {
+  if ((state === 'falling' && !allLanded) || BOTTLES.some(b => b.sparks.length > 0)) {
     raf = requestAnimationFrame(animate);
   } else {
     raf = null;
@@ -932,22 +964,8 @@ function animate(ts) {
 }
 
 function startAnimIfNeeded() {
-  if (airPanelOpen && !raf) raf = requestAnimationFrame(animate);
+  return;
 }
-
-function wire(sid, did, prop, idx, fmt) {
-  document.getElementById(sid).addEventListener('input', function () {
-    const v = parseFloat(this.value);
-    BOTTLES[idx][prop] = v;
-    document.getElementById(did).textContent = fmt(v);
-    if (raf) { cancelAnimationFrame(raf); raf = null; }
-    state = 'idle';
-    document.getElementById('dropBtn').disabled = false;
-    init(); draw(); startAnimIfNeeded();
-  });
-}
-wire('w1', 'w1v', 'water', 0, v => v + '%');
-wire('w2', 'w2v', 'water', 1, v => v + '%');
 
 function stopDragPointer(e) {
   if (dragIdx === null) return;
@@ -966,17 +984,19 @@ cv.addEventListener('pointerdown', (e) => {
   if (hit >= 0) {
     if (state === 'done') state = 'idle';
     selectedIdx = hit;
+    syncObjPanel();
     dragIdx = hit;
     cv.setPointerCapture(e.pointerId);
     cv.classList.add('dragging');
     applyCanvasYToHeight(BOTTLES[hit], my);
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     state = 'idle';
-    document.getElementById('dropBtn').disabled = false;
+    syncActionButton();
     init(); draw(); startAnimIfNeeded();
     e.preventDefault();
   } else {
     selectedIdx = null;
+    syncObjPanel();
     draw();
     startAnimIfNeeded();
   }
@@ -989,7 +1009,7 @@ cv.addEventListener('pointermove', (e) => {
   applyCanvasYToHeight(BOTTLES[dragIdx], my);
   if (raf) { cancelAnimationFrame(raf); raf = null; }
   state = 'idle';
-  document.getElementById('dropBtn').disabled = false;
+  syncActionButton();
   init(); draw(); startAnimIfNeeded();
   e.preventDefault();
 });
@@ -997,61 +1017,55 @@ cv.addEventListener('pointermove', (e) => {
 cv.addEventListener('pointerup', (e) => { stopDragPointer(e); draw(); startAnimIfNeeded(); });
 cv.addEventListener('pointercancel', (e) => { stopDragPointer(e); draw(); startAnimIfNeeded(); });
 
-document.getElementById('dropBtn').addEventListener('click', () => {
+dropBtn.addEventListener('click', () => {
   if (state === 'falling') return;
+
+  if (state === 'done') {
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    state = 'idle';
+    syncActionButton();
+    init(); draw(); startAnimIfNeeded();
+    return;
+  }
+
   if (raf) { cancelAnimationFrame(raf); raf = null; }
   state = 'falling'; t0 = null; prevTs = null;
-  document.getElementById('dropBtn').disabled = true;
+  syncActionButton();
   init(); raf = requestAnimationFrame(animate);
 });
-document.getElementById('resetBtn').addEventListener('click', () => {
-  if (raf) { cancelAnimationFrame(raf); raf = null; }
-  state = 'idle'; document.getElementById('dropBtn').disabled = false;
-  init(); draw(); startAnimIfNeeded();
-});
 
-let objPanelTarget = 0;
-
-function updateWaterSlider(idx) {
-  document.getElementById('wc-' + idx).style.display =
-    BOTTLES[idx].type === 'bottle' ? '' : 'none';
+function getObjPanelTarget() {
+  return selectedIdx === null ? 0 : selectedIdx;
 }
 
 function syncObjPanel() {
-  document.querySelectorAll('.obj-target').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.idx) === objPanelTarget);
-  });
-  const cur = BOTTLES[objPanelTarget].type;
+  const objPanelTarget = getObjPanelTarget();
+  const targetObj = BOTTLES[objPanelTarget];
   document.querySelectorAll('.obj-choice').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.type === cur);
+    const isBottleBtn = btn.dataset.type === 'bottle';
+    if (isBottleBtn && targetObj.type === 'bottle') {
+      const presetWater = parseFloat(btn.dataset.water);
+      btn.classList.toggle('selected', Math.abs(targetObj.water - presetWater) < 0.1);
+      return;
+    }
+    btn.classList.toggle('selected', !isBottleBtn && btn.dataset.type === targetObj.type);
   });
 }
 
-document.getElementById('objBtn').addEventListener('click', () => {
-  const panel = document.getElementById('objectPanel');
-  panel.classList.toggle('open');
-  document.getElementById('objBtn').classList.toggle('active', panel.classList.contains('open'));
-  syncObjPanel();
-});
-
-document.querySelectorAll('.obj-target').forEach(btn => {
-  btn.addEventListener('click', () => {
-    objPanelTarget = parseInt(btn.dataset.idx);
-    syncObjPanel();
-  });
-});
-
 document.querySelectorAll('.obj-choice').forEach(btn => {
   btn.addEventListener('click', () => {
+    const objPanelTarget = getObjPanelTarget();
     const type = btn.dataset.type;
+    const bottleWaterPreset = parseFloat(btn.dataset.water);
     BOTTLES[objPanelTarget].type = type;
-    const info = OBJECT_TYPES[type];
-    document.getElementById('ctrl-name-' + objPanelTarget).textContent = info.name;
-    updateWaterSlider(objPanelTarget);
+    if (type === 'bottle' && Number.isFinite(bottleWaterPreset)) {
+      BOTTLES[objPanelTarget].water = bottleWaterPreset;
+    }
+    selectedIdx = objPanelTarget;
     syncObjPanel();
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     state = 'idle';
-    document.getElementById('dropBtn').disabled = false;
+    syncActionButton();
     init(); draw(); startAnimIfNeeded();
   });
 });
@@ -1062,14 +1076,6 @@ function setRho(val) {
   document.getElementById('rhoVal').textContent = val.toFixed(3) + ' kg/m³';
 }
 
-document.getElementById('airBtn').addEventListener('click', () => {
-  airPanelOpen = !airPanelOpen;
-  document.getElementById('airPanel').classList.toggle('open', airPanelOpen);
-  document.getElementById('airBtn').classList.toggle('active', airPanelOpen);
-  startAnimIfNeeded();
-  if (!airPanelOpen) draw();
-});
-
 document.getElementById('rhoSlider').addEventListener('input', function () {
   setRho(parseFloat(this.value));
 });
@@ -1078,7 +1084,13 @@ document.getElementById('airEarthBtn').addEventListener('click', () => {
   setRho(RHO_EARTH);
 });
 
+syncObjPanel();
+syncActionButton();
 updateBottleScale(); init(); draw();
+requestAnimationFrame(() => refreshObjectChoiceThumbs());
+window.addEventListener('resize', () => {
+  requestAnimationFrame(refreshObjectChoiceThumbs);
+});
 </script>
 </body>
 </html>

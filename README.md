@@ -60,3 +60,21 @@ If GitHub asks you to sign in, use **GitHub Desktop**, **SSH**, or a **personal 
    Old links like `https://dr-sad.github.io/drop/` will no longer load the site.
 
 `index.html` redirects visitors to `MikeSIM_SNS.html`.
+
+## Embed snippet (direct file URL)
+
+Use this snippet to embed the simulation directly (recommended):
+
+```html
+<iframe
+  src="https://dr-sad.github.io/mike-drop/MikeSIM_SNS.html"
+  width="850"
+  height="540"
+  style="border:0; max-width:100%;"
+  loading="lazy"
+  allowfullscreen
+  title="Mike Drop Simulation">
+</iframe>
+```
+
+Direct-linking to `MikeSIM_SNS.html` avoids redirect hiccups that can happen when embedding the repo root URL.
