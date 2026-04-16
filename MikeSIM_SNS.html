@@ -66,8 +66,8 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  /* Bottom grid row + row gap: keeps canvas seam aligned; Drop (#btns) sits in this inset */
-  padding-bottom: calc(32px + 6px);
+  /* Reserve smaller center buffer; keep room for Drop + result text strip */
+  padding-bottom: calc(24px + 6px);
 }
 
 canvas#sim {
@@ -88,7 +88,7 @@ canvas#sim.dragging { cursor: grabbing; }
 #btns {
   position: absolute;
   right: 5%;
-  bottom: 1px;
+  bottom: 14px;
   z-index: 20;
   display: flex;
   gap: 0;
@@ -96,6 +96,28 @@ canvas#sim.dragging { cursor: grabbing; }
   align-items: center;
   pointer-events: none;
 }
+#fallResult {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  min-height: 14px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(18, 31, 49, 0.82);
+  color: rgba(232,244,255,0.92);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+#fallResult.show { opacity: 1; }
 #btns button {
   pointer-events: auto;
   padding: 0 20px;
@@ -162,6 +184,10 @@ canvas#sim.dragging { cursor: grabbing; }
   gap: 6px;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 2px;
 }
 #airScale {
   position: relative;
@@ -207,6 +233,7 @@ canvas#sim.dragging { cursor: grabbing; }
   border-radius: 9px;
   background: rgba(255,255,255,0.04);
   color: rgba(226,236,255,0.55);
+  cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s, color 0.15s, opacity 0.15s;
 }
 .air-world svg {
@@ -260,6 +287,10 @@ canvas#sim.dragging { cursor: grabbing; }
   gap: 6px;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 2px;
 }
 .obj-choice {
   width: 100%;
@@ -307,26 +338,26 @@ canvas#sim.dragging { cursor: grabbing; }
   <div id="objectPanel">
     <div id="objectPanelTitle">Objects</div>
     <div id="objGrid">
-      <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="Bottle (full)" aria-label="Bottle full">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bottle (full)</span>
+      <button type="button" class="obj-choice selected" data-type="bottle" data-water="100" title="bottle (full)" aria-label="bottle full">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bottle (full)</span>
       </button>
-      <button type="button" class="obj-choice" data-type="bottle" data-water="25" title="Bottle (25%)" aria-label="Bottle twenty five percent">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bottle (25%)</span>
+      <button type="button" class="obj-choice" data-type="bottle" data-water="10" title="bottle (empty)" aria-label="bottle empty">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bottle (empty)</span>
       </button>
-      <button type="button" class="obj-choice" data-type="bowling" title="Bowling ball" aria-label="Bowling ball">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Bowling ball</span>
+      <button type="button" class="obj-choice" data-type="bowling" title="bowling ball" aria-label="bowling ball">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">bowling ball</span>
       </button>
-      <button type="button" class="obj-choice" data-type="chute_closed" title="Parachute closed" aria-label="Parachute closed">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Parachute (closed)</span>
+      <button type="button" class="obj-choice" data-type="chute_closed" title="parachute closed" aria-label="parachute closed">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">parachute (closed)</span>
       </button>
-      <button type="button" class="obj-choice" data-type="chute_open" title="Parachute open" aria-label="Parachute open">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Parachute (open)</span>
+      <button type="button" class="obj-choice" data-type="chute_open" title="parachute open" aria-label="parachute open">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">parachute (open)</span>
       </button>
-      <button type="button" class="obj-choice" data-type="balloon" title="Balloon" aria-label="Balloon">
-        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">Balloon</span>
+      <button type="button" class="obj-choice" data-type="balloon" title="balloon" aria-label="balloon">
+        <canvas class="obj-thumb" width="52" height="52" aria-hidden="true"></canvas><span class="obj-label">balloon</span>
       </button>
-      <button type="button" class="obj-choice" data-type="surprise" title="Surprise me" aria-label="Surprise me">
-        <span class="obj-label">Surprise me</span>
+      <button type="button" class="obj-choice" data-type="surprise" title="surprise me" aria-label="surprise me">
+        <span class="obj-label">surprise me</span>
       </button>
     </div>
   </div>
@@ -336,6 +367,7 @@ canvas#sim.dragging { cursor: grabbing; }
     <div id="btns">
       <button type="button" id="dropBtn">Drop</button>
     </div>
+    <div id="fallResult" aria-live="polite"></div>
   </div>
 
   <div id="airPanel">
@@ -425,19 +457,19 @@ const MASS_WATER = 0.500;
 const SIM_DT = 1 / 480;
 
 const OBJECT_TYPES = {
-  bottle:       { name: 'Bottle',        fixedMass: null,  cdA: C_D * A },
-  bowling:      { name: 'Bowling Ball',  fixedMass: 6.35,  cdA: 0.47 * Math.PI * 0.108 ** 2 },
-  chute_closed: { name: 'Chute (Closed)',fixedMass: 0.020, cdA: 1.0  * 0.003 },
-  chute_open:   { name: 'Chute (Open)',  fixedMass: 0.020, cdA: 1.5  * 0.10  },
-  balloon:      { name: 'Balloon',       fixedMass: 0.012, cdA: 0.47 * Math.PI * 0.15 ** 2 },
-  pumpkin:      { name: 'Pumpkin',       fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
-  watermelon:   { name: 'Watermelon',    fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
-  watermellon:  { name: 'Watermellon',   fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
-  chicken:      { name: 'Rubber Chicken',fixedMass: 0.35,  cdA: 1.1  * 0.025 },
-  mug:          { name: 'Coffee Mug',    fixedMass: 0.42,  cdA: 1.05 * 0.019 },
-  gift:         { name: 'Gift',          fixedMass: 0.80,  cdA: 1.00 * 0.028 },
-  pinata:       { name: 'Pinata',        fixedMass: 0.50,  cdA: 1.35 * 0.040 },
-  anvil:        { name: 'Anvil',         fixedMass: 8.00,  cdA: 0.70 * 0.030 },
+  bottle:       { name: 'bottle',         fixedMass: null,  cdA: C_D * A },
+  bowling:      { name: 'bowling ball',   fixedMass: 6.35,  cdA: 0.47 * Math.PI * 0.108 ** 2 },
+  chute_closed: { name: 'parachute (closed)', fixedMass: 0.020, cdA: 1.0  * 0.003 },
+  chute_open:   { name: 'parachute (open)',   fixedMass: 0.020, cdA: 1.5  * 0.10  },
+  balloon:      { name: 'balloon',        fixedMass: 0.012, cdA: 0.47 * Math.PI * 0.15 ** 2 },
+  pumpkin:      { name: 'pumpkin',        fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermelon:   { name: 'watermelon',     fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  watermellon:  { name: 'watermellon',    fixedMass: 2.00,  cdA: 0.47 * Math.PI * 0.14 ** 2 },
+  chicken:      { name: 'rubber chicken', fixedMass: 0.35,  cdA: 1.1  * 0.025 },
+  mug:          { name: 'coffee mug',     fixedMass: 0.42,  cdA: 1.05 * 0.019 },
+  gift:         { name: 'gift',           fixedMass: 0.80,  cdA: 1.00 * 0.028 },
+  pinata:       { name: 'pinata',         fixedMass: 0.50,  cdA: 1.35 * 0.040 },
+  anvil:        { name: 'anvil',          fixedMass: 8.00,  cdA: 0.70 * 0.030 },
 };
 const SURPRISE_TYPES = ['watermellon', 'pumpkin', 'mug', 'gift', 'pinata', 'anvil'];
 let surpriseCycleIndex = null;
@@ -449,6 +481,14 @@ function nextSurpriseType() {
   }
   surpriseCycleIndex = (surpriseCycleIndex + 1) % SURPRISE_TYPES.length;
   return SURPRISE_TYPES[surpriseCycleIndex];
+}
+
+function getSideColorHexByIndex(idx) {
+  return idx === 0 ? '#4a90f0' : '#e07030';
+}
+
+function withAlpha(hex, alphaHex) {
+  return `${hex}${alphaHex}`;
 }
 
 const BOTTLES = [
@@ -464,6 +504,39 @@ let state = 'idle', t0 = null, elapsed = 0, raf = null, prevTs = null;
 let selectedIdx = null;
 let dragIdx = null;
 const dropBtn = document.getElementById('dropBtn');
+const fallResultEl = document.getElementById('fallResult');
+
+function clearFallResult() {
+  fallResultEl.textContent = '';
+  fallResultEl.classList.remove('show');
+}
+
+function getResultObjectLabel(b) {
+  if (b.type === 'bottle') {
+    return b.water >= 50 ? 'bottle (full)' : 'bottle (empty)';
+  }
+  return OBJECT_TYPES[b.type]?.name || b.type;
+}
+
+function getResultColorLabel(b) {
+  const c = String(b.color || '').toLowerCase();
+  if (c === '#4a90f0') return 'blue';
+  if (c === '#e07030') return 'orange';
+  return b.cx <= (W / 2) ? 'blue' : 'orange';
+}
+
+function showFirstTouchResult() {
+  const landed = BOTTLES.filter(b => b.landTime !== null);
+  if (landed.length === 0) return;
+  const EPS = 1e-4;
+  const ranked = landed.slice().sort((a, b) => a.landTime - b.landTime);
+  let message = `The ${getResultColorLabel(ranked[0])} ${getResultObjectLabel(ranked[0])} landed first.`;
+  if (ranked.length >= 2 && Math.abs(ranked[0].landTime - ranked[1].landTime) <= EPS) {
+    message = 'Both objects landed at the exact same time.';
+  }
+  fallResultEl.textContent = message;
+  fallResultEl.classList.add('show');
+}
 
 function syncActionButton() {
   if (state === 'falling') {
@@ -510,6 +583,7 @@ function rr(x, y, w, h, r) {
 }
 
 function init() {
+  clearFallResult();
   for (const b of BOTTLES) {
     b.bottomY = GY - b.h * PPM;
     b.vy      = 0;
@@ -918,9 +992,11 @@ function drawMugShape(b) {
   const w = Math.max(21, Math.round(39 * s));
   const h = Math.max(26, Math.round(43 * s));
   const y = by - h;
+  const mugBase = b.color || '#f2f5fa';
+  const mugEdge = mugBase === '#4a90f0' ? '#2f5fa8' : mugBase === '#e07030' ? '#9a481c' : '#bdc7d5';
   ctx.save();
-  ctx.fillStyle = '#f2f5fa';
-  ctx.strokeStyle = '#bdc7d5';
+  ctx.fillStyle = withAlpha(mugBase, 'dd');
+  ctx.strokeStyle = mugEdge;
   ctx.lineWidth = Math.max(1, 2.0 * s);
   rr(cx - w / 2, y, w, h, Math.max(2, 3 * s));
   ctx.fill();
@@ -934,7 +1010,7 @@ function drawMugShape(b) {
   const hx = cx + w * 0.58, hy = y + h * 0.55;
   ctx.beginPath();
   ctx.ellipse(hx, hy, w * 0.32, h * 0.28, 0, -Math.PI * 0.9, Math.PI * 0.9);
-  ctx.strokeStyle = '#f7fbff';
+  ctx.strokeStyle = withAlpha(mugBase, 'f0');
   ctx.lineWidth = Math.max(1.5, 3.2 * s);
   ctx.stroke();
   ctx.fillStyle = '#6f4930';
@@ -1083,13 +1159,6 @@ function drawAirDensity() {
     ctx.beginPath(); ctx.arc(x, y, d.r, 0, Math.PI * 2); ctx.fill();
   }
 
-  if (RHO < 0.01) {
-    ctx.font = 'bold 11px ui-monospace, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#f08060';
-    ctx.fillText('VACUUM', W - 10, 33);
-  }
-
   ctx.restore();
 }
 
@@ -1184,6 +1253,9 @@ function refreshObjectChoiceThumbs() {
     if (type === 'balloon') {
       pseudo.color = BOTTLES[1].color;
       pseudo.cap = BOTTLES[1].cap;
+    }
+    if (type === 'mug') {
+      pseudo.color = getSideColorHexByIndex(0);
     }
     if (type === 'bowling') {
       pseudo.color = BOTTLES[0].color;
@@ -1338,6 +1410,7 @@ function animate(ts) {
   if (allLanded && state === 'falling') {
     state = 'done';
     syncActionButton();
+    showFirstTouchResult();
   }
   if ((state === 'falling' && !allLanded) || BOTTLES.some(b => b.sparks.length > 0)) {
     raf = requestAnimationFrame(animate);
@@ -1452,6 +1525,9 @@ document.querySelectorAll('.obj-choice').forEach(btn => {
     if (type === 'bottle' && Number.isFinite(bottleWaterPreset)) {
       BOTTLES[objPanelTarget].water = bottleWaterPreset;
     }
+    if (type === 'mug') {
+      BOTTLES[objPanelTarget].color = getSideColorHexByIndex(objPanelTarget);
+    }
     selectedIdx = objPanelTarget;
     syncObjPanel();
     if (raf) { cancelAnimationFrame(raf); raf = null; }
@@ -1476,10 +1552,28 @@ function setRho(val) {
       (world === 'titan' && titanActive);
     el.classList.toggle('active', active);
   });
+  // Reflect air-density changes on the canvas immediately while dragging slider.
+  if (state !== 'falling') {
+    draw();
+    startAnimIfNeeded();
+  }
 }
 
 document.getElementById('rhoSlider').addEventListener('input', function () {
   setRho(parseFloat(this.value));
+});
+
+document.querySelectorAll('.air-world').forEach(card => {
+  card.addEventListener('click', () => {
+    const world = card.dataset.world;
+    if (world === 'moon') {
+      setRho(0);
+    } else if (world === 'earth') {
+      setRho(1.225);
+    } else if (world === 'titan') {
+      setRho(4);
+    }
+  });
 });
 
 syncObjPanel();
